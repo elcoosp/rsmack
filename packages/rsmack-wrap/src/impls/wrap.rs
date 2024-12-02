@@ -6,7 +6,7 @@ use syn::spanned::Spanned;
 use syn::*;
 #[derive(Debug, FromMeta)]
 pub struct Args {
-    wrapper: Ident,
+    with: Ident,
     // use syn::punctuated::Punctuated;
     // derive: Option<Punctuated<syn::Ident, Token![,]>>,
 }
@@ -19,7 +19,7 @@ pub fn exec(args: Args, item: ItemStruct) -> TokenStream {
                 .named
                 .into_iter()
                 .map(|f| {
-                    let wrapper_ty = args.wrapper.clone();
+                    let wrapper_ty = args.with.clone();
                     let ty = f.ty.clone();
                     let ty_span = ty.span().unwrap();
                     match ty {
@@ -32,7 +32,7 @@ pub fn exec(args: Args, item: ItemStruct) -> TokenStream {
                             emit_error!(
                                 ty_span.clone(),
                                 format!(
-                                    "#[opt_macros::wrap]: Field type not supported {}",
+                                    "#[rsmack_wrap::wrap]: Field type not supported {}",
                                     format!("{:?}", ty).split(" ").next().unwrap()
                                 )
                             );

@@ -92,6 +92,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "rsmack-utils"
+version = "0.0.0"
+dependencies = [
+ "darling",
+ "proc-macro-error",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.90",
+]
+
+[[package]]
 name = "rsmack-wrap"
 version = "0.0.0"
 dependencies = [
@@ -99,6 +110,7 @@ dependencies = [
  "proc-macro-error",
  "proc-macro2",
  "quote",
+ "rsmack-utils",
  "syn 2.0.90",
 ]
 
