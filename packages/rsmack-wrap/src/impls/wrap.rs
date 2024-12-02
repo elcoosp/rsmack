@@ -10,18 +10,17 @@ pub struct Args {
     // use syn::punctuated::Punctuated;
     // derive: Option<Punctuated<syn::Ident, Token![,]>>,
 }
-/// Execute wrap macro
+/// Execute wrap macro, **before serde derive, otherwise it will error**
 pub fn exec(args: Args, item: ItemStruct) -> TokenStream {
-    let mut optioned_item = item.clone();
-    optioned_item.fields = match optioned_item.fields {
+    let mut transformed_item = item.clone();
+    transformed_item.fields = match transformed_item.fields {
         syn::Fields::Named(fields_named) => {
-            let opt_fields_named = fields_named
+            let transformed_fields_named = fields_named
                 .named
                 .into_iter()
                 .map(|f| {
                     let wrapper_ty = args.with.clone();
                     let ty = f.ty.clone();
-                    let ty_span = ty.span().unwrap();
                     match ty {
                         Type::Path(t) => wrap_field_ty(wrapper_ty, t, f),
                         Type::Slice(t) => wrap_field_ty(wrapper_ty, t, f),
@@ -29,6 +28,7 @@ pub fn exec(args: Args, item: ItemStruct) -> TokenStream {
                         Type::Array(t) => wrap_field_ty(wrapper_ty, t, f),
                         _ => {
                             let ty = f.ty.clone();
+                            let ty_span = ty.span().unwrap();
                             emit_error!(
                                 ty_span.clone(),
                                 format!(
@@ -50,13 +50,16 @@ pub fn exec(args: Args, item: ItemStruct) -> TokenStream {
                 .collect();
             syn::Fields::Named(FieldsNamed {
                 brace_token: fields_named.brace_token.clone(),
-                named: opt_fields_named,
+                named: transformed_fields_named,
             })
         }
-        _ => abort!(optioned_item.fields.span(), "Only named struct supported"),
+        _ => abort!(
+            transformed_item.fields.span(),
+            "Only named struct supported"
+        ),
     };
     quote! {
-        #optioned_item
+        #transformed_item
     }
 }
 /// Wrap the inner type of a [Field] in a type generic arguments call
