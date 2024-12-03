@@ -222,8 +222,21 @@ dependencies = [
  "proc-macro-error2",
  "proc-macro2",
  "quote",
+ "rsmack-megamac",
  "rsmack-utils",
  "run_script",
+ "syn",
+]
+
+[[package]]
+name = "rsmack-megamac"
+version = "0.0.0"
+dependencies = [
+ "darling",
+ "proc-macro-error2",
+ "proc-macro2",
+ "quote",
+ "rsmack-utils",
  "syn",
 ]
 

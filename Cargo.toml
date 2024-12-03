@@ -3,5 +3,6 @@ members = [
     "packages/rsmack-wrap",
     "packages/rsmack-utils",
     "packages/rsmack-fs",
+    "packages/rsmack-megamac",
 ]
 resolver = "2"
