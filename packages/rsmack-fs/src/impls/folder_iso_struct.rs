@@ -36,9 +36,9 @@ pub fn exec(args: Args, item: ItemStruct, logr: Logr) -> TokenStream {
         #item
 
         impl #impl_generics #name #ty_generics #where_clause {
-            /// Build time generate this struct by calling [rsmack_utils::folder_iso_struct]")]
+            /// Build time generate this struct by calling [rsmack_utils::fs::folder_iso_struct]")]
             fn generate() -> () {
-                rsmack_utils::folder_iso_struct()
+                rsmack_utils::fs::folder_iso_struct()
                     .pre(quote::quote! { #(#attrs)* })
                     .name(#name_str)
                     .from_crate(#from_crate)
