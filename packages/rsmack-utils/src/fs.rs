@@ -1,3 +1,4 @@
+//! [rsmack-fs](../rsmack_fs/index.html) related utils
 use std::{
     fs::File,
     path::{Path, PathBuf},
