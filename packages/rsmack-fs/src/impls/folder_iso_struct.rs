@@ -1,43 +1,51 @@
 use darling::FromMeta;
 use proc_macro2::TokenStream;
-use proc_macro_error::*;
 use quote::{quote, ToTokens};
-use rsmack_utils::calling_crate_dir;
+use rsmack_utils::logr::Logr;
 use syn::spanned::Spanned;
 use syn::*;
 #[derive(Debug, FromMeta)]
 pub struct Args {
+    /// Name of the crate, expected to be in the CARGO_MANIFEST_DIR
     from_crate: Ident,
     /// Folder name, should be flat
-    with: Ident,
+    folder: Ident,
 }
 
 /// Execute folder_iso_struct macro
-pub fn exec(args: Args, item: ItemStruct) -> TokenStream {
-    let mut transformed_item = item.clone();
-    let ccd = calling_crate_dir();
+pub fn exec(args: Args, item: ItemStruct, logr: Logr) -> TokenStream {
     let from_crate = args.from_crate.to_token_stream().to_string();
-    let folder = args.with.to_token_stream().to_string();
-    // Can not call fs
-    let _mods_folder_path = ccd.join(from_crate).join(&folder).join("src");
-    // abort!(item.span(), format!("{mods_folder_path:#?}"));
-    transformed_item.fields = match transformed_item.fields {
-        syn::Fields::Named(fields_named) => {
-            let transformed_fields_named = fields_named.clone();
+    let folder = args.folder.to_token_stream().to_string();
+    let mut transformed_item = item.clone();
 
-            syn::Fields::Named(transformed_fields_named)
-        }
-        _ => abort!(
+    transformed_item.fields = match transformed_item.fields {
+        syn::Fields::Named(fields_named) => syn::Fields::Named(fields_named),
+        _ => logr.abort(
             transformed_item.fields.span(),
-            "Only named struct supported"
+            "Only named struct supported",
         ),
     };
-    // let name = transformed_item.ident.clone();
-    // let generics = transformed_item.generics.clone();
-    // let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
+    let name = item.ident.clone();
+    let name_str = name.to_string();
+    let folder_str = folder.to_string();
+    let attrs = item.attrs.clone();
+    let generics = item.generics.clone();
+    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
     quote! {
 
-        #transformed_item
+        #item
+
+        impl #impl_generics #name #ty_generics #where_clause {
+            /// Build time generate this struct by calling [rsmack_utils::folder_iso_struct]")]
+            fn generate() -> () {
+                rsmack_utils::folder_iso_struct()
+                    .pre(quote::quote! { #(#attrs)* })
+                    .name(#name_str)
+                    .from_crate(#from_crate)
+                    .folder(#folder_str)
+                    .call();
+            }
+        }
 
     }
 }

@@ -2,6 +2,7 @@ use darling::FromMeta;
 use proc_macro2::TokenStream;
 use proc_macro_error::*;
 use quote::{quote, ToTokens};
+use rsmack_utils::logr::Logr;
 use syn::spanned::Spanned;
 use syn::*;
 #[derive(Debug, FromMeta)]
@@ -11,7 +12,7 @@ pub struct Args {
     // derive: Option<Punctuated<syn::Ident, Token![,]>>,
 }
 /// Execute wrap macro, **before serde derive, otherwise it will error**
-pub fn exec(args: Args, item: ItemStruct) -> TokenStream {
+pub fn exec(args: Args, item: ItemStruct, logr: Logr) -> TokenStream {
     let mut transformed_item = item.clone();
     transformed_item.fields = match transformed_item.fields {
         syn::Fields::Named(fields_named) => {
@@ -53,9 +54,9 @@ pub fn exec(args: Args, item: ItemStruct) -> TokenStream {
                 named: transformed_fields_named,
             })
         }
-        _ => abort!(
+        _ => logr.abort(
             transformed_item.fields.span(),
-            "Only named struct supported"
+            "Only named struct supported",
         ),
     };
     quote! {

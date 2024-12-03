@@ -1,3 +1,4 @@
+pub mod logr;
 pub mod exec {
     #[macro_export]
     /// Call [`crate::exec::call`] on `impls` mod with `Args` args ident
@@ -49,9 +50,12 @@ pub mod exec {
                     return TokenStream::from(e.write_errors());
                 }
             };
+        let crate_name = std::module_path!();
+        let logr = rsmack_utils::logr::Logr::builder().prefix(format!("{crate_name}::{}", stringify!($exec_fn_mod_ident))).build();
         crate::$implementations_mod_ident::$exec_fn_mod_ident::exec(
             parsed_args,
             parsed_item,
+            logr
         )
         .into()
     }};
