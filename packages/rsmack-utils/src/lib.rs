@@ -50,8 +50,7 @@ pub mod exec {
                     return TokenStream::from(e.write_errors());
                 }
             };
-        let crate_name = std::module_path!();
-        let logr = rsmack_utils::logr::Logr::builder().prefix(format!("{crate_name}::{}", stringify!($exec_fn_mod_ident))).build();
+        let logr = rsmack_utils::logr::Logr::new_module_path(stringify!($exec_fn_mod_ident));
         crate::$implementations_mod_ident::$exec_fn_mod_ident::exec(
             parsed_args,
             parsed_item,
