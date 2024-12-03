@@ -1,3 +1,7 @@
 [workspace]
-members = ["packages/rsmack-wrap"]
+members = [
+    "packages/rsmack-wrap",
+    "packages/rsmack-utils",
+    "packages/rsmack-fs",
+]
 resolver = "2"
