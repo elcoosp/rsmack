@@ -1,5 +1,5 @@
 use proc_macro::TokenStream;
-use proc_macro_error::*;
+use proc_macro_error2::*;
 use rsmack_utils::*;
 mod impls;
 #[proc_macro_error]

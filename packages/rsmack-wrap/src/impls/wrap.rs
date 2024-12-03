@@ -1,6 +1,6 @@
 use darling::FromMeta;
 use proc_macro2::TokenStream;
-use proc_macro_error::*;
+use proc_macro_error2::*;
 use quote::{quote, ToTokens};
 use rsmack_utils::logr::Logr;
 use syn::spanned::Spanned;

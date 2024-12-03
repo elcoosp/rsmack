@@ -1,20 +1,35 @@
+//! This module expose [Logr] a **proc-macro only** logger wrapper around [proc_macro_error2]
 use proc_macro2::Span;
-
 #[derive(bon::Builder)]
 #[builder(on(String, into))]
+/// Logger around [proc_macro_error2], **only for proc-macros**
 pub struct Logr {
-    prefix: String,
+    pub prefix: String,
+}
+macro_rules! emit_msg_with_span {
+    ($ident:ident, $ret:ty) => {
+        #[doc = concat!("Call [proc_macro_error2::",stringify!($ident),"!] with [`Self::prefix`]")]
+        pub fn $ident(&self, span: Span, msg: &str) -> $ret {
+            proc_macro_error2::$ident!(span, self.fmt_msg(msg))
+        }
+    };
+}
+macro_rules! emit_msg {
+    ($ident:ident, $ret:ty) => {
+        #[doc = concat!("Call [proc_macro_error2::",stringify!($ident),"!] with [`Self::prefix`]")]
+        pub fn $ident(&self, msg: &str) -> $ret {
+            proc_macro_error2::$ident!(self.fmt_msg(msg))
+        }
+    };
 }
 impl Logr {
-    /// Call [proc_macro_error::abort!] with [Self::prefix]
-    pub fn abort(&self, span: Span, msg: &str) -> ! {
-        proc_macro_error::abort!(span, format!("[{}] {}", self.prefix, msg))
+    fn fmt_msg(&self, msg: &str) -> String {
+        format!("#[{}] {}", self.prefix, msg)
     }
-    /// Create a [Logr] with [std::module_path!] prepend to [Self::prefix]
-    pub fn new_module_path(prefix: &str) -> Self {
-        let module_path = std::module_path!();
-        Self::builder()
-            .prefix(format!("{module_path}::{}", prefix))
-            .build()
-    }
+    emit_msg_with_span! {abort, !}
+    emit_msg_with_span! {emit_error, ()}
+    emit_msg_with_span! {emit_warning, ()}
+    emit_msg! {abort_call_site, !}
+    emit_msg! {emit_call_site_error, ()}
+    emit_msg! {emit_call_site_warning, ()}
 }
