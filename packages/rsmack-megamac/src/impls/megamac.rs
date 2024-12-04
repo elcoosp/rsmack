@@ -1,10 +1,10 @@
 use darling::FromMeta;
 use proc_macro2::TokenStream;
 use quote::*;
-use rsmack_utils::logr::Logr;
-// use syn::spanned::Spanned;
-use syn::*;
-#[derive(Debug, FromMeta)]
+use rsmack_utils::{fs::calling_crate_dir, megamac::ExecEnv};
+use strum::Display;
+use syn::{spanned::Spanned, *};
+#[derive(Debug, PartialEq, Display, FromMeta)]
 enum MacroKind {
     Func,
     Attr,
@@ -25,8 +25,38 @@ impl From<Ident> for MacroKind {
     }
 }
 /// Execute megamac macro
-pub fn exec(args: Args, _logr: Logr) -> TokenStream {
-    let name = args.name;
+pub fn exec(args: Args, env: ExecEnv) -> TokenStream {
+    let name = args.name.clone();
+    let imports = quote! {
+        use proc_macro::TokenStream;
+        use proc_macro_error2::*;
+    };
+    let kind = args.kind.to_string();
+    let sf_path = name.span().span().source_file().path();
+    let mut components = sf_path.components();
+    components.next_back();
+    let macro_impl_file_path = components
+        .as_path()
+        .join(env.implementations_mod_ident)
+        .join(format!("{}.rs", args.name.to_string()));
+    let macro_impl_src =
+        std::fs::read_to_string(macro_impl_file_path).expect("Failed to get macro_impl_src");
+    let macro_impl_file_ast = syn::parse_file(&macro_impl_src).expect(&format!(
+        "Failed to parse macro_impl_src {}",
+        args.name.clone()
+    ));
+    let args_item = macro_impl_file_ast.items.iter().find(|i| match i {
+        Item::Struct(ItemStruct { ident, .. }) => ident.to_string() == env.exec_args_ident,
+        _ => false,
+    });
+    if let Some(args_item) = args_item {
+        env.logr.abort_call_site(&format!("{args_item:#?}",));
+    }
+    let args_link = format!("{name}::Args");
+    let doc_str = format!(
+        "{} procedural macro ({}). See [`Args`]({args_link})",
+        name, kind
+    );
     let macro_impl = match args.kind.into() {
         MacroKind::Func => quote! {
             #[proc_macro_error]
@@ -43,12 +73,11 @@ pub fn exec(args: Args, _logr: Logr) -> TokenStream {
             }
         },
     };
-    let imports = quote! {
-        use proc_macro::TokenStream;
-        use proc_macro_error2::*;
-    };
+
     quote! {
         #imports
+
+        #[doc = #doc_str]
         #macro_impl
     }
 }

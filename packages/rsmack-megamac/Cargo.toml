@@ -11,3 +11,5 @@ proc-macro2 = "1.0.92"
 quote = "1.0.37"
 rsmack-utils = { path = "../rsmack-utils" }
 syn = { version = "2.0.90", features = ["full"] }
+strum = { version = "0.26.3", features = ["derive"] }
+bon = "3.2.0"

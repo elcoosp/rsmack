@@ -1,8 +1,10 @@
+#![feature(proc_macro_span)]
 use proc_macro::TokenStream;
 use proc_macro_error2::*;
 use rsmack_utils::*;
 mod impls;
 
+/// Declare a mega macro
 #[proc_macro_error]
 #[proc_macro]
 pub fn megamac(args: TokenStream) -> TokenStream {

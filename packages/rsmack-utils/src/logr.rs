@@ -1,6 +1,6 @@
 //! This module expose [Logr] a **proc-macro only** logger wrapper around [proc_macro_error2]
 use proc_macro2::Span;
-#[derive(bon::Builder)]
+#[derive(Debug, bon::Builder)]
 #[builder(on(String, into))]
 /// Logger around [proc_macro_error2], **only for proc-macros**
 pub struct Logr {

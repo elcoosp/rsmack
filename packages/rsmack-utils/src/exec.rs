@@ -55,13 +55,12 @@ macro_rules! call_attr_proc_macro {
                 }
             };
         let module_path = std::module_path!();
-        let logr = rsmack_utils::logr::Logr::builder()
-            .prefix(format!("{module_path}::{}", stringify!($exec_fn_mod_ident)))
-            .build();
+        let env = rsmack_utils::megamac::ExecEnv::builder(module_path,stringify!($implementations_mod_ident),stringify!($exec_args_ident), stringify!($exec_fn_mod_ident)).build();
+
         crate::$implementations_mod_ident::$exec_fn_mod_ident::exec(
             parsed_args,
             parsed_item,
-            logr
+            env
         )
         .into()
     }};
@@ -102,12 +101,11 @@ macro_rules! call_func_proc_macro {
                 }
             };
         let module_path = std::module_path!();
-        let logr = rsmack_utils::logr::Logr::builder()
-            .prefix(format!("{module_path}::{}", stringify!($exec_fn_mod_ident)))
-            .build();
+        let env = rsmack_utils::megamac::ExecEnv::builder(module_path,stringify!($implementations_mod_ident),stringify!($exec_args_ident), stringify!($exec_fn_mod_ident)).build();
+
         crate::$implementations_mod_ident::$exec_fn_mod_ident::exec(
             parsed_args,
-            logr
+            env
         )
         .into()
     }};
