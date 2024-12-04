@@ -1,4 +1,3 @@
-#![feature(proc_macro_span)]
 use proc_macro::TokenStream;
 use proc_macro_error2::*;
 use rsmack_utils::*;

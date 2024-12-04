@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use bon::Builder;
 use darling::FromMeta;
 use indoc::formatdoc;
@@ -5,7 +7,7 @@ use proc_macro2::TokenStream;
 use quote::*;
 use rsmack_utils::megamac::ExecEnv;
 use strum::Display;
-use syn::{spanned::Spanned, *};
+use syn::*;
 #[derive(Debug, PartialEq, Display, FromMeta)]
 enum MacroKind {
     Func,
@@ -86,15 +88,18 @@ pub fn exec(args: Args, env: ExecEnv) -> TokenStream {
 }
 
 fn get_macro_impl_file_ast(args: &Args, env: &ExecEnv) -> File {
-    let sf_path = args.name.clone().span().span().source_file().path();
-    let mut components = sf_path.components();
-    components.next_back();
-    let macro_impl_file_path = components
-        .as_path()
+    let package_src_folder = {
+        let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
+        let path = PathBuf::from(manifest_dir).join("src");
+        path
+    };
+    let macro_impl_file_path = package_src_folder
         .join(env.implementations_mod_ident.clone())
         .join(format!("{}.rs", args.name.to_string()));
-    let macro_impl_src = std::fs::read_to_string(macro_impl_file_path)
-        .expect(&format!("Failed to get macro_impl_src of {}", args.name));
+    let macro_impl_src = std::fs::read_to_string(macro_impl_file_path.clone()).expect(&format!(
+        "Failed to get macro_impl_src of {} at {macro_impl_file_path:?}",
+        args.name
+    ));
     let macro_impl_file_ast = match syn::parse_file(&macro_impl_src) {
         Ok(x)=> x,
         Err(e) => env.logr.abort_call_site(&format!(
