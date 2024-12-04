@@ -6,10 +6,10 @@ use syn::spanned::Spanned;
 use syn::*;
 #[derive(Debug, FromMeta)]
 pub struct Args {
-    /// Name of the crate, expected to be in the CARGO_MANIFEST_DIR
-    from_crate: Ident,
-    /// Folder name, should be flat
-    folder: Ident,
+    /// Name of the crate, expected to be inside the CARGO_MANIFEST_DIR
+    from_crate: syn::Ident,
+    /// Folder name, should be a flat folder
+    folder: syn::Ident,
 }
 
 /// Execute folder_iso_struct macro

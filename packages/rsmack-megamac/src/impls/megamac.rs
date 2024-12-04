@@ -1,5 +1,6 @@
 use bon::Builder;
 use darling::FromMeta;
+use indoc::formatdoc;
 use proc_macro2::TokenStream;
 use quote::*;
 use rsmack_utils::megamac::ExecEnv;
@@ -12,7 +13,9 @@ enum MacroKind {
 }
 #[derive(Debug, FromMeta)]
 pub struct Args {
+    /// [MacroKind] as [Ident], either `Attr` or `Func`
     kind: Ident,
+    /// Macro name as [Ident]
     name: Ident,
 }
 
@@ -33,25 +36,29 @@ pub fn exec(args: Args, env: ExecEnv) -> TokenStream {
         use proc_macro_error2::*;
     };
     let kind = args.kind.to_string();
-    let sf_path = name.span().span().source_file().path();
-    let mut components = sf_path.components();
-    components.next_back();
-    let macro_impl_file_path = components
-        .as_path()
-        .join(env.implementations_mod_ident.clone())
-        .join(format!("{}.rs", args.name.to_string()));
-    let macro_impl_src =
-        std::fs::read_to_string(macro_impl_file_path).expect("Failed to get macro_impl_src");
-    let macro_impl_file_ast = syn::parse_file(&macro_impl_src).expect(&format!(
-        "Failed to parse macro_impl_src {}",
-        args.name.clone()
-    ));
-    let fields_doc = get_args_fields_doc(&macro_impl_file_ast, &env, &args);
-    let args_link = format!("{name}::Args");
-    // env.logr.abort_call_site(&format!("{fields_doc:#?}"));
-    let doc_str = format!(
-        "{} procedural macro ({}). See [`Args`]({args_link})",
-        name, kind
+    let macro_impl_file_ast = get_macro_impl_file_ast(&args, &env);
+    let fields_doc = get_args_fields_doc(&macro_impl_file_ast, &args, &env);
+    let formatted_fields_doc = fields_doc
+        .iter()
+        .map(|fd| {
+            format!(
+                "* `{}`\n  + description: {}\n  + type: [{}]",
+                fd.ident.to_string(),
+                fd.doc.clone().unwrap_or("Not documented".into()),
+                fd.ty.to_token_stream().to_string().replace(" ", "")
+            )
+        })
+        .collect::<Vec<_>>()
+        .join("\n");
+    let doc_str = formatdoc!(
+        "{name} procedural macro ({kind}).
+
+        # Parameters
+
+        {formatted_fields_doc}
+
+        # Examples
+        ",
     );
     let macro_impl = match args.kind.into() {
         MacroKind::Func => quote! {
@@ -77,12 +84,32 @@ pub fn exec(args: Args, env: ExecEnv) -> TokenStream {
         #macro_impl
     }
 }
+
+fn get_macro_impl_file_ast(args: &Args, env: &ExecEnv) -> File {
+    let sf_path = args.name.clone().span().span().source_file().path();
+    let mut components = sf_path.components();
+    components.next_back();
+    let macro_impl_file_path = components
+        .as_path()
+        .join(env.implementations_mod_ident.clone())
+        .join(format!("{}.rs", args.name.to_string()));
+    let macro_impl_src = std::fs::read_to_string(macro_impl_file_path)
+        .expect(&format!("Failed to get macro_impl_src of {}", args.name));
+    let macro_impl_file_ast = match syn::parse_file(&macro_impl_src) {
+        Ok(x)=> x,
+        Err(e) => env.logr.abort_call_site(&format!(
+        "Failed to parse macro_impl_src {}, this may happen for no real reason in your IDE, check that your project still build with cargo: {e:?}",
+        args.name.clone()
+    ))};
+    macro_impl_file_ast
+}
 #[derive(Debug, Builder)]
 struct FieldDoc {
     pub ident: Ident,
     pub doc: Option<String>,
+    pub ty: Type,
 }
-fn get_args_fields_doc(macro_impl_file_ast: &File, env: &ExecEnv, args: &Args) -> Vec<FieldDoc> {
+fn get_args_fields_doc(macro_impl_file_ast: &File, args: &Args, env: &ExecEnv) -> Vec<FieldDoc> {
     let args_item = macro_impl_file_ast.items.iter().find(|i| match i {
         Item::Struct(ItemStruct { ident, .. }) => ident.to_string() == env.exec_args_ident,
         _ => false,
@@ -96,6 +123,7 @@ fn get_args_fields_doc(macro_impl_file_ast: &File, env: &ExecEnv, args: &Args) -
                     f.attrs
                         .iter()
                         .map(|a| match a.meta.clone() {
+                            // TODO may not have a meta byt we should still return a FieldDoc
                             Meta::NameValue(MetaNameValue {
                                 value:
                                     Expr::Lit(ExprLit {
@@ -108,11 +136,13 @@ fn get_args_fields_doc(macro_impl_file_ast: &File, env: &ExecEnv, args: &Args) -
                                 PathSegment { ident, .. } => match ident.to_string() == "doc" {
                                     true => FieldDoc::builder()
                                         .ident(f.ident.clone().unwrap())
-                                        .doc(lit_str.to_token_stream().to_string())
+                                        .doc(lit_str.value())
+                                        .ty(f.ty.clone())
                                         .build(),
-                                    false => {
-                                        FieldDoc::builder().ident(f.ident.clone().unwrap()).build()
-                                    }
+                                    false => FieldDoc::builder()
+                                        .ident(f.ident.clone().unwrap())
+                                        .ty(f.ty.clone())
+                                        .build(),
                                 },
                             },
                             _ => unimplemented!(),
@@ -125,7 +155,8 @@ fn get_args_fields_doc(macro_impl_file_ast: &File, env: &ExecEnv, args: &Args) -
         fields_doc
     } else {
         env.logr.abort_call_site(&format!(
-            "Failed to find `Args` struct in `{}` module",
+            "Failed to find `{}` struct in `{}` module",
+            env.exec_args_ident,
             args.name.clone()
         ));
     }

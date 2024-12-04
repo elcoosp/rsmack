@@ -7,7 +7,8 @@ use syn::spanned::Spanned;
 use syn::*;
 #[derive(Debug, FromMeta)]
 pub struct Args {
-    with: Ident,
+    /// The type with which to wrap the struct item fields
+    with: syn::Ident,
     // use syn::punctuated::Punctuated;
     // derive: Option<Punctuated<syn::Ident, Token![,]>>,
 }
