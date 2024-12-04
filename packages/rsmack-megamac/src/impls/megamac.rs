@@ -1,7 +1,8 @@
+use bon::Builder;
 use darling::FromMeta;
 use proc_macro2::TokenStream;
 use quote::*;
-use rsmack_utils::{fs::calling_crate_dir, megamac::ExecEnv};
+use rsmack_utils::megamac::ExecEnv;
 use strum::Display;
 use syn::{spanned::Spanned, *};
 #[derive(Debug, PartialEq, Display, FromMeta)]
@@ -37,7 +38,7 @@ pub fn exec(args: Args, env: ExecEnv) -> TokenStream {
     components.next_back();
     let macro_impl_file_path = components
         .as_path()
-        .join(env.implementations_mod_ident)
+        .join(env.implementations_mod_ident.clone())
         .join(format!("{}.rs", args.name.to_string()));
     let macro_impl_src =
         std::fs::read_to_string(macro_impl_file_path).expect("Failed to get macro_impl_src");
@@ -45,14 +46,9 @@ pub fn exec(args: Args, env: ExecEnv) -> TokenStream {
         "Failed to parse macro_impl_src {}",
         args.name.clone()
     ));
-    let args_item = macro_impl_file_ast.items.iter().find(|i| match i {
-        Item::Struct(ItemStruct { ident, .. }) => ident.to_string() == env.exec_args_ident,
-        _ => false,
-    });
-    if let Some(args_item) = args_item {
-        env.logr.abort_call_site(&format!("{args_item:#?}",));
-    }
+    let fields_doc = get_args_fields_doc(&macro_impl_file_ast, &env, &args);
     let args_link = format!("{name}::Args");
+    // env.logr.abort_call_site(&format!("{fields_doc:#?}"));
     let doc_str = format!(
         "{} procedural macro ({}). See [`Args`]({args_link})",
         name, kind
@@ -79,5 +75,58 @@ pub fn exec(args: Args, env: ExecEnv) -> TokenStream {
 
         #[doc = #doc_str]
         #macro_impl
+    }
+}
+#[derive(Debug, Builder)]
+struct FieldDoc {
+    pub ident: Ident,
+    pub doc: Option<String>,
+}
+fn get_args_fields_doc(macro_impl_file_ast: &File, env: &ExecEnv, args: &Args) -> Vec<FieldDoc> {
+    let args_item = macro_impl_file_ast.items.iter().find(|i| match i {
+        Item::Struct(ItemStruct { ident, .. }) => ident.to_string() == env.exec_args_ident,
+        _ => false,
+    });
+
+    if let Some(args_item) = args_item {
+        let fields_doc = match args_item {
+            Item::Struct(ItemStruct { fields, .. }) => fields
+                .iter()
+                .flat_map(|f| {
+                    f.attrs
+                        .iter()
+                        .map(|a| match a.meta.clone() {
+                            Meta::NameValue(MetaNameValue {
+                                value:
+                                    Expr::Lit(ExprLit {
+                                        lit: Lit::Str(lit_str),
+                                        ..
+                                    }),
+                                path: Path { segments, .. },
+                                ..
+                            }) => match segments.first().unwrap() {
+                                PathSegment { ident, .. } => match ident.to_string() == "doc" {
+                                    true => FieldDoc::builder()
+                                        .ident(f.ident.clone().unwrap())
+                                        .doc(lit_str.to_token_stream().to_string())
+                                        .build(),
+                                    false => {
+                                        FieldDoc::builder().ident(f.ident.clone().unwrap()).build()
+                                    }
+                                },
+                            },
+                            _ => unimplemented!(),
+                        })
+                        .collect::<Vec<_>>()
+                })
+                .collect::<Vec<_>>(),
+            _ => unimplemented!(),
+        };
+        fields_doc
+    } else {
+        env.logr.abort_call_site(&format!(
+            "Failed to find `Args` struct in `{}` module",
+            args.name.clone()
+        ));
     }
 }
