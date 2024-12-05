@@ -27,8 +27,6 @@ pub struct Args {
 #[derive(Debug, FromDeriveInput)]
 #[darling(attributes(edoc), forward_attrs(allow, doc, cfg))]
 pub struct DeriveInputArgs {
-    ident: syn::Ident,
-    attrs: Vec<syn::Attribute>,
     data: ast::Data<EdocField, EdocField>,
 }
 
@@ -120,7 +118,9 @@ pub fn exec(args: Args, item: ItemStruct, env: ExecEnv) -> TokenStream {
                     }
                     }
                 }
-                e => env.logr.abort_call_site("Only Tuple supported, maybe you are missing a second element".to_string()),
+                _ => env.logr.abort_call_site(
+                    "Only Tuple supported, maybe you are missing a second element".to_string(),
+                ),
             }
             let sep = "";
             let evaluated = evaluated_elems.join(sep);
@@ -129,7 +129,7 @@ pub fn exec(args: Args, item: ItemStruct, env: ExecEnv) -> TokenStream {
         }
     }
 
-    let field_attr_replacer = |field: &mut Field, _attr_name: &String, attr_to_rm_idx: usize| {
+    let field_attr_replacer = |_field: &mut Field, _attr_name: &String, attr_to_rm_idx: usize| {
         let doc_str = &evaluated_edoc_fields[attr_to_rm_idx];
         syn::parse_quote! {#[doc = #doc_str]}
     };
