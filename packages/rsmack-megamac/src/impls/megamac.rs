@@ -45,16 +45,7 @@ pub fn exec(args: Args, env: ExecEnv) -> TokenStream {
     let kind = args.kind.to_string();
     let macro_impl_file_ast = get_macro_impl_file_ast(&args, &env);
     let fields_doc = get_args_fields_doc(&macro_impl_file_ast, &args, &env);
-    let get_arg_field_const_id = |fd: &FieldDoc| {
-        Ident::new(
-            &format!(
-                "{}_ARGS_FIELD_TYPE_QUALIFIED_PATH_{}",
-                name.to_string().to_uppercase(),
-                fd.ident.to_string().to_uppercase()
-            ),
-            fd.ident.span(),
-        )
-    };
+
     let formatted_fields_doc = fields_doc
         .iter()
         .map(|fd| {
@@ -104,7 +95,16 @@ pub fn exec(args: Args, env: ExecEnv) -> TokenStream {
             }
         },
     };
-
+    // let get_arg_field_const_id = |fd: &FieldDoc| {
+    //     Ident::new(
+    //         &format!(
+    //             "{}_ARGS_FIELD_TYPE_QUALIFIED_PATH_{}",
+    //             name.to_string().to_uppercase(),
+    //             fd.ident.to_string().to_uppercase()
+    //         ),
+    //         fd.ident.span(),
+    //     )
+    // };
     // let consts = fields_doc.iter().map(|fd| {
     //     let const_id = get_arg_field_const_id(fd);
     //     let ty = fd.ty.clone();
@@ -126,9 +126,14 @@ fn get_macro_impl_file_ast(args: &Args, env: &ExecEnv) -> File {
     let macro_impl_file_path = package_src_folder
         .join(env.implementations_mod_ident.clone())
         .join(format!("{}.rs", args.name));
-    let macro_impl_src = std::fs::read_to_string(macro_impl_file_path.clone()).unwrap_or_else(|_| panic!("Failed to get macro_impl_src of {} at {macro_impl_file_path:?}",
-        args.name));
-    
+    let macro_impl_src =
+        std::fs::read_to_string(macro_impl_file_path.clone()).unwrap_or_else(|_| {
+            panic!(
+                "Failed to get macro_impl_src of {} at {macro_impl_file_path:?}",
+                args.name
+            )
+        });
+
     match syn::parse_file(&macro_impl_src) {
         Ok(x)=> x,
         Err(e) => env.logr.abort_call_site(format!(
