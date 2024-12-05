@@ -60,7 +60,7 @@ pub fn exec(args: Args, env: ExecEnv) -> TokenStream {
         .map(|fd| {
             let template_without_ty_qualified_path = format!(
                 "* `{}` - {}\n  + type: [`{}`]",
-                fd.ident.to_string(),
+                fd.ident,
                 fd.doc.clone().unwrap_or("Not documented".into()),
                 fd.ty.to_token_stream().to_string().replace(" ", ""),
             );
@@ -125,18 +125,16 @@ fn get_macro_impl_file_ast(args: &Args, env: &ExecEnv) -> File {
     let package_src_folder = package_src_folder();
     let macro_impl_file_path = package_src_folder
         .join(env.implementations_mod_ident.clone())
-        .join(format!("{}.rs", args.name.to_string()));
-    let macro_impl_src = std::fs::read_to_string(macro_impl_file_path.clone()).expect(&format!(
-        "Failed to get macro_impl_src of {} at {macro_impl_file_path:?}",
-        args.name
-    ));
-    let macro_impl_file_ast = match syn::parse_file(&macro_impl_src) {
+        .join(format!("{}.rs", args.name));
+    let macro_impl_src = std::fs::read_to_string(macro_impl_file_path.clone()).unwrap_or_else(|_| panic!("Failed to get macro_impl_src of {} at {macro_impl_file_path:?}",
+        args.name));
+    
+    match syn::parse_file(&macro_impl_src) {
         Ok(x)=> x,
-        Err(e) => env.logr.abort_call_site(&format!(
+        Err(e) => env.logr.abort_call_site(format!(
         "Failed to parse macro_impl_src {}, this may happen for no real reason in your IDE, check that your project still build with cargo: {e:?}",
         args.name.clone()
-    ))};
-    macro_impl_file_ast
+    ))}
 }
 
 #[derive(Debug, Builder)]
@@ -169,7 +167,7 @@ fn get_args_fields_doc(macro_impl_file_ast: &File, args: &Args, env: &ExecEnv) -
                                 path: Path { segments, .. },
                                 ..
                             }) => match segments.first().unwrap() {
-                                PathSegment { ident, .. } => match ident.to_string() == "doc" {
+                                PathSegment { ident, .. } => match *ident == "doc" {
                                     true => FieldDoc::builder()
                                         .ident(f.ident.clone().unwrap())
                                         .doc(lit_str.value())
@@ -190,7 +188,7 @@ fn get_args_fields_doc(macro_impl_file_ast: &File, args: &Args, env: &ExecEnv) -
         };
         fields_doc
     } else {
-        env.logr.abort_call_site(&format!(
+        env.logr.abort_call_site(format!(
             "Failed to find `{}` struct in `{}` module",
             env.exec_args_ident,
             args.name.clone()

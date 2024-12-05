@@ -44,14 +44,14 @@ pub fn exec(args: Args, item: ItemStruct, env: ExecEnv) -> TokenStream {
                                 vis: f.vis.clone(),
                                 mutability: f.mutability.clone(),
                                 ident: f.ident.clone(),
-                                colon_token: f.colon_token.clone(),
+                                colon_token: f.colon_token,
                             }
                         }
                     }
                 })
                 .collect();
             syn::Fields::Named(FieldsNamed {
-                brace_token: fields_named.brace_token.clone(),
+                brace_token: fields_named.brace_token,
                 named: transformed_fields_named,
             })
         }
@@ -76,6 +76,6 @@ fn wrap_field_ty(wrapper: impl ToTokens, inner_ty: impl ToTokens, f: Field) -> F
         vis: f.vis.clone(),
         mutability: f.mutability.clone(),
         ident: f.ident.clone(),
-        colon_token: f.colon_token.clone(),
+        colon_token: f.colon_token,
     }
 }

@@ -64,13 +64,10 @@ fn rm_item_fields_attrs<
                 }
                 _ => false,
             });
-            match attr_to_rm_idx {
-                Some(i) => {
-                    let replacement_attr = replace_with(field, attr_to_rm, removed_count);
-                    field.attrs[i] = replacement_attr;
-                    removed_count += 1;
-                }
-                None => {}
+            if let Some(i) = attr_to_rm_idx {
+                let replacement_attr = replace_with(field, attr_to_rm, removed_count);
+                field.attrs[i] = replacement_attr;
+                removed_count += 1;
             };
         }
     }
@@ -84,7 +81,7 @@ pub fn exec(args: Args, item: ItemStruct, env: ExecEnv) -> TokenStream {
         Ok(args) => args,
         Err(e) => env
             .logr
-            .abort_call_site(&format!("Failed to parse macro args: {e}")),
+            .abort_call_site(format!("Failed to parse macro args: {e}")),
     };
 
     let derive_args_data = derive_args.data.take_struct();
@@ -112,7 +109,7 @@ pub fn exec(args: Args, item: ItemStruct, env: ExecEnv) -> TokenStream {
                             let const_ident = segments.first().unwrap().ident.clone();
                             let const_value = resolved_consts.get(&const_ident.to_string());
                             match const_value {
-                                None => env.logr.emit_error(const_ident.span(),&format!("Unresolved const ident {const_ident:?}")),
+                                None => env.logr.emit_error(const_ident.span(),format!("Unresolved const ident {const_ident:?}")),
                                 Some(value) => evaluated_elems.push(value.clone())
                             }
 
@@ -123,9 +120,7 @@ pub fn exec(args: Args, item: ItemStruct, env: ExecEnv) -> TokenStream {
                     }
                     }
                 }
-                e => env.logr.abort_call_site(&format!(
-                    "Only Tuple supported, maybe you are missing a second element"
-                )),
+                e => env.logr.abort_call_site("Only Tuple supported, maybe you are missing a second element".to_string()),
             }
             let sep = "";
             let evaluated = evaluated_elems.join(sep);
@@ -175,7 +170,7 @@ fn resolve_consts(
                     Expr::Lit(ExprLit { lit:Lit::ByteStr(lit @ LitByteStr {..}),.. }) => {
                         let _ = resolved_consts.insert(const_name,format!("{:?}",lit.value()));
                     },
-                    x => env.logr.abort_call_site(&format!(
+                    x => env.logr.abort_call_site(format!(
                         "Unexpected const item expression here, expected literal or `concat!` (NOT YET SUPPORTED) invocation, received: `{x:?}` at `{line}`"
                     )),
                 }
