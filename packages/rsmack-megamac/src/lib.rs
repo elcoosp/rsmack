@@ -1,3 +1,4 @@
+#![feature(const_type_name)]
 use proc_macro::TokenStream;
 use proc_macro_error2::*;
 use rsmack_utils::*;

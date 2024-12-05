@@ -41,7 +41,7 @@ macro_rules! call_attr_proc_macro {
         let meta_list = match ast::NestedMeta::parse_meta_list($attr_tok_stream.into()) {
             Ok(v) => v,
             Err(e) => {
-                return TokenStream::from(Error::from(e).write_errors());
+                return proc_macro::TokenStream::from(Error::from(e).write_errors());
             }
         };
         let parsed_item = syn::parse_macro_input!($item_tok_stream as $item_ty);
@@ -51,7 +51,7 @@ macro_rules! call_attr_proc_macro {
             ) {
                 Ok(v) => v,
                 Err(e) => {
-                    return TokenStream::from(e.write_errors());
+                    return proc_macro::TokenStream::from(e.write_errors());
                 }
             };
         let module_path = std::module_path!();
@@ -76,6 +76,21 @@ macro_rules! call_func_impls_with_args {
     };
 }
 #[macro_export]
+macro_rules! call_derive_impls_with_args {
+    (
+            $exec_fn_mod_ident:ident,
+            $item_tok_stream:ident
+        ) => {
+        rsmack_utils::exec::call_derive_proc_macro!(
+            impls,
+            Args,
+            $exec_fn_mod_ident,
+            $item_tok_stream
+        )
+    };
+}
+
+#[macro_export]
 macro_rules! call_func_proc_macro {
     (
         $implementations_mod_ident:ident,
@@ -88,7 +103,7 @@ macro_rules! call_func_proc_macro {
         let meta_list = match ast::NestedMeta::parse_meta_list($args_tok_stream.into()) {
             Ok(v) => v,
             Err(e) => {
-                return TokenStream::from(Error::from(e).write_errors());
+                return proc_macro::TokenStream::from(Error::from(e).write_errors());
             }
         };
         let parsed_args =
@@ -97,11 +112,11 @@ macro_rules! call_func_proc_macro {
             ) {
                 Ok(v) => v,
                 Err(e) => {
-                    return TokenStream::from(e.write_errors());
+                    return proc_macro::TokenStream::from(e.write_errors());
                 }
             };
         let module_path = std::module_path!();
-        let env = rsmack_utils::megamac::ExecEnv::builder(module_path,stringify!($implementations_mod_ident),stringify!($exec_args_ident), stringify!($exec_fn_mod_ident)).build();
+        let env = rsmack_utils::megamac::ExecEnv::builder(module_path, stringify!($implementations_mod_ident), stringify!($exec_args_ident), stringify!($exec_fn_mod_ident)).build();
 
         crate::$implementations_mod_ident::$exec_fn_mod_ident::exec(
             parsed_args,
@@ -110,7 +125,32 @@ macro_rules! call_func_proc_macro {
         .into()
     }};
 }
+
+#[macro_export]
+macro_rules! call_derive_proc_macro {
+    (
+        $implementations_mod_ident:ident,
+        $exec_args_ident:ident,
+        $exec_fn_mod_ident:ident,
+        $item_tok_stream:ident
+    ) => {{
+        use darling::*;
+        let parsed_item = syn::parse_macro_input!($item_tok_stream as syn::DeriveInput);
+        let module_path = std::module_path!();
+        let env = rsmack_utils::megamac::ExecEnv::builder(
+            module_path,
+            stringify!($implementations_mod_ident),
+            stringify!($exec_args_ident),
+            stringify!($exec_fn_mod_ident),
+        )
+        .build();
+        crate::$implementations_mod_ident::$exec_fn_mod_ident::exec(parsed_item, env).into()
+    }};
+}
+
 pub use call_attr_impls_with_args;
 pub use call_attr_proc_macro;
+pub use call_derive_impls_with_args;
+pub use call_derive_proc_macro;
 pub use call_func_impls_with_args;
 pub use call_func_proc_macro;

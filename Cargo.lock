@@ -251,6 +251,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "rsmack-utils",
+ "stringcase",
  "strum",
  "syn",
 ]

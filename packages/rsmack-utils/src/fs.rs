@@ -100,3 +100,8 @@ pub fn generate_file<P: AsRef<Path>>(path: P, text: &[u8]) {
     let mut f = File::create(dest_path).unwrap();
     f.write_all(text).unwrap()
 }
+pub fn package_src_folder() -> PathBuf {
+    let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
+    let path = PathBuf::from(manifest_dir).join("src");
+    path
+}
