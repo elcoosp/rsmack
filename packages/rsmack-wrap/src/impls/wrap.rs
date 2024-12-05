@@ -35,7 +35,7 @@ pub fn exec(args: Args, item: ItemStruct, env: ExecEnv) -> TokenStream {
                                 ty_span.clone(),
                                 format!(
                                     "#[rsmack_wrap::wrap]: Field type not supported {}",
-                                    format!("{:?}", ty).split(" ").next().unwrap()
+                                    format!("{ty:?}").split(' ').next().unwrap()
                                 )
                             );
                             Field {

@@ -6,13 +6,13 @@ use syn::spanned::Spanned;
 use syn::*;
 #[derive(Debug, FromMeta)]
 pub struct Args {
-    /// Name of the crate, expected to be inside the CARGO_MANIFEST_DIR
+    /// Name of the crate, expected to be inside the `CARGO_MANIFEST_DIR`
     from_crate: syn::Ident,
     /// Folder name, should be a flat folder
     folder: syn::Ident,
 }
 
-/// Execute folder_iso_struct macro
+/// Execute `folder_iso_struct` macro
 pub fn exec(args: Args, item: ItemStruct, env: ExecEnv) -> TokenStream {
     let from_crate = args.from_crate.to_token_stream().to_string();
     let folder = args.folder.to_token_stream().to_string();
@@ -40,7 +40,7 @@ pub fn exec(args: Args, item: ItemStruct, env: ExecEnv) -> TokenStream {
             /// Build time generate this struct by calling [rsmack_utils::fs::folder_iso_struct]")]
             fn generate() -> () {
                 rsmack_utils::fs::folder_iso_struct()
-                    .pre(quote::quote! { #(#attrs)* })
+                    .pre(&quote::quote! { #(#attrs)* })
                     .name(#name_str)
                     .from_crate(#from_crate)
                     .folder(#folder_str)

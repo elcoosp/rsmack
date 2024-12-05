@@ -13,14 +13,14 @@ enum MacroKind {
 }
 #[derive(Debug, FromMeta)]
 pub struct Args {
-    /// [MacroKind] as [Ident], either `Attr` or `Func`
+    /// [`MacroKind`] as [`Ident`], either `Attr` or `Func`
     kind: Ident,
 
-    /// Macro name as [Ident]
+    /// Macro name as [`Ident`]
     name: Ident,
 
     #[darling(default)]
-    /// The receiver [syn] type of the macro attr, only for [MacroKind::Attr]
+    /// The receiver [syn] type of the macro attr, only for [`MacroKind::Attr`]
     receiver: Option<Ident>,
 }
 
@@ -34,6 +34,7 @@ impl From<Ident> for MacroKind {
         }
     }
 }
+
 // FIXME Does not work correctly on multi line comments because this is maybe in ast many meta items, hence the flat_map may not be valid
 /// Execute megamac macro
 pub fn exec(args: Args, env: ExecEnv) -> TokenStream {
@@ -53,7 +54,7 @@ pub fn exec(args: Args, env: ExecEnv) -> TokenStream {
                 "* `{}` - {}\n  + type: [`{}`]",
                 fd.ident,
                 fd.doc.clone().unwrap_or("Not documented".into()),
-                fd.ty.to_token_stream().to_string().replace(" ", ""),
+                fd.ty.to_token_stream().to_string().replace(' ', ""),
             );
 
             // FIXME get_arg_field_const_id is useless since doc can just accept a literal, maybe create a macro edoc ?
@@ -173,16 +174,17 @@ fn get_args_fields_doc(macro_impl_file_ast: &File, args: &Args, env: &ExecEnv) -
                                 ..
                             }) => {
                                 let PathSegment { ident, .. } = segments.first().unwrap();
-                                match *ident == "doc" {
-                                    true => FieldDoc::builder()
+                                if *ident == "doc" {
+                                    FieldDoc::builder()
                                         .ident(f.ident.clone().unwrap())
                                         .doc(lit_str.value())
                                         .ty(f.ty.clone())
-                                        .build(),
-                                    false => FieldDoc::builder()
+                                        .build()
+                                } else {
+                                    FieldDoc::builder()
                                         .ident(f.ident.clone().unwrap())
                                         .ty(f.ty.clone())
-                                        .build(),
+                                        .build()
                                 }
                             }
                             _ => unimplemented!(),

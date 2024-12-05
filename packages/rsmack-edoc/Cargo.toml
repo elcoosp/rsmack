@@ -13,3 +13,5 @@ rsmack-utils = { path = "../rsmack-utils" }
 syn = { version = "2.0.90", features = ["full"] }
 rsmack-megamac = { path = "../rsmack-megamac" }
 const_format = "0.2.33"
+[lints]
+workspace = true

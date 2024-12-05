@@ -9,6 +9,8 @@ use proc_macro2::{Span, TokenStream};
 use quote::{quote, ToTokens};
 use syn::Ident;
 /// Get the directory (workspace) from which we are compiling
+/// # Panics
+/// This aggressively unwrap some layers of parent path
 pub fn calling_crate_dir() -> &'static Path {
     // Need a build.rs file
     let out_dir = Path::new(env!("OUT_DIR"));
@@ -31,7 +33,7 @@ pub fn calling_crate_dir() -> &'static Path {
 #[builder]
 pub fn folder_iso_struct(
     name: &str,
-    pre: TokenStream,
+    pre: &TokenStream,
     folder: &str,
     // TODO find a way to remove maybe ?
     from_crate: &str,
@@ -87,21 +89,25 @@ pub fn folder_iso_struct(
 }
 
 fn parse_id_maybe_raw(s: &str) -> Ident {
-    
     syn::parse_str::<Ident>(s).unwrap_or_else(|_| Ident::new_raw(s, Span::call_site()))
 }
 
 /// Generate file in `OUTDIR`
+/// # Panics
+/// - If `OUTDIR` not set
+/// - File creation or write fail
 pub fn generate_file<P: AsRef<Path>>(path: P, text: &[u8]) {
+    use std::io::Write;
     let out_dir = std::env::var("OUT_DIR").unwrap();
     let out_path = PathBuf::from(&out_dir);
     let dest_path = out_path.join(&path);
-    use std::io::Write;
     let mut f = File::create(dest_path).unwrap();
-    f.write_all(text).unwrap()
+    f.write_all(text).unwrap();
 }
+/// Get the package source folder from `CARGO_MANIFEST_DIR` at runtime
+/// # Panics
+/// If `CARGO_MANIFEST_DIR` does not exist
 pub fn package_src_folder() -> PathBuf {
     let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
-    
     PathBuf::from(manifest_dir).join("src")
 }

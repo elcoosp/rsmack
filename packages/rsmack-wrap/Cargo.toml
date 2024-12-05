@@ -12,3 +12,5 @@ quote = "1.0.37"
 rsmack-utils = { path = "../rsmack-utils" }
 syn = { version = "2.0.90", features = ["full"] }
 rsmack-megamac = { path = "../rsmack-megamac" }
+[lints]
+workspace = true

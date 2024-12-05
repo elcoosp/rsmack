@@ -13,3 +13,5 @@ rsmack-utils = { path = "../rsmack-utils" }
 rsmack-megamac = { path = "../rsmack-megamac" }
 syn = { version = "2.0.90", features = ["full"] }
 run_script = "0.11.0"
+[lints]
+workspace = true

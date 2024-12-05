@@ -15,7 +15,7 @@ pub struct EdocFieldConcat {
 #[derive(Debug, FromField, FromVariant)]
 #[darling(attributes(edoc))]
 pub struct EdocField {
-    /// Concatenate members of [syn::ExprTuple] which maybe either [syn::LitStr] or a const [syn::Ident].
+    /// Concatenate members of [`syn::ExprTuple`] which maybe either [`syn::LitStr`] or a const [`syn::Ident`].
     /// Return a `#[doc]` attribute
     #[darling(flatten)]
     concat: EdocFieldConcat,
@@ -51,7 +51,7 @@ fn rm_item_fields_attrs<
 ) -> ItemStruct {
     for attr_to_rm in &attrs_to_remove {
         let mut removed_count: usize = 0;
-        for field in item.fields.iter_mut() {
+        for field in &mut item.fields {
             let attr_to_rm_idx = field.attrs.iter().position(|a| match a {
                 Attribute {
                     meta: Meta::List(MetaList { path, .. }),
@@ -124,8 +124,7 @@ pub fn exec(args: Args, item: ItemStruct, env: ExecEnv) -> TokenStream {
             }
             let sep = "";
             let evaluated = evaluated_elems.join(sep);
-            evaluated_edoc_fields.push(evaluated)
-            // env.logr.abort_call_site(&evaluated);
+            evaluated_edoc_fields.push(evaluated);
         }
     }
 

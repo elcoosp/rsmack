@@ -13,7 +13,7 @@ pub struct ExecEnv {
     #[builder(start_fn)]
     pub exec_fn_mod_ident: String,
     #[builder(field = Logr::builder()
-        .prefix(format!("{module_path}::{}", exec_fn_mod_ident))
+        .prefix(format!("{module_path}::{exec_fn_mod_ident}"))
         .build())
     ]
     pub logr: Logr,
