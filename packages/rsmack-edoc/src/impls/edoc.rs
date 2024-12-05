@@ -154,28 +154,34 @@ fn resolve_consts(
 ) {
     // TODO should be memoized
     if let Ok(lines) = read_lines(call_site_file_path) {
-        for line in lines.flatten() {
-            const CONST_KW: &str = "const";
-            let trimmed_line = line.trim();
-            if trimmed_line.starts_with(CONST_KW) {
-                let parsed_const_item: syn::ItemConst = syn::parse_str(&line.clone()).unwrap();
-                let const_name = parsed_const_item.ident.to_string();
-                match *parsed_const_item.expr {
-                    Expr::Lit(ExprLit { lit:Lit::Str(lit @ LitStr {..}),.. }) => {
-                        let _ = resolved_consts.insert(const_name,lit.value());
-                    },
-                    Expr::Lit(ExprLit { lit:Lit::Bool(lit @ LitBool {..}),.. }) => {
-                        let _ = resolved_consts.insert(const_name,lit.value().to_string());
-                    },
-                    Expr::Lit(ExprLit { lit:Lit::ByteStr(lit @ LitByteStr {..}),.. }) => {
-                        let _ = resolved_consts.insert(const_name,format!("{:?}",lit.value()));
-                    },
-                    x => env.logr.abort_call_site(format!(
-                        "Unexpected const item expression here, expected literal or `concat!` (NOT YET SUPPORTED) invocation, received: `{x:?}` at `{line}`"
-                    )),
+        for line_read in lines {
+            match line_read {
+                Ok(line) => {
+                    const CONST_KW: &str = "const";
+                    let trimmed_line = line.trim();
+                    if trimmed_line.starts_with(CONST_KW) {
+                        let parsed_const_item: syn::ItemConst =
+                            syn::parse_str(&line.clone()).unwrap();
+                        let const_name = parsed_const_item.ident.to_string();
+                        match *parsed_const_item.expr {
+                            Expr::Lit(ExprLit { lit:Lit::Str(lit @ LitStr {..}),.. }) => {
+                                let _ = resolved_consts.insert(const_name,lit.value());
+                            },
+                            Expr::Lit(ExprLit { lit:Lit::Bool(lit @ LitBool {..}),.. }) => {
+                                let _ = resolved_consts.insert(const_name,lit.value().to_string());
+                            },
+                            Expr::Lit(ExprLit { lit:Lit::ByteStr(lit @ LitByteStr {..}),.. }) => {
+                                let _ = resolved_consts.insert(const_name,format!("{:?}",lit.value()));
+                            },
+                            x => env.logr.abort_call_site(format!(
+                                "Unexpected const item expression here, expected literal or `concat!` (NOT YET SUPPORTED) invocation, received: `{x:?}` at `{line}`"
+                            )),
+                        }
+                    }
                 }
-                // env.logr
-                //     .abort_call_site(&format!("{:#?}", parsed_const_item));
+                Err(e) => env
+                    .logr
+                    .abort_call_site(format!("Failed to read line: {e:?}")),
             }
         }
     }

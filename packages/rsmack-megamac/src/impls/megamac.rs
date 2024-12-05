@@ -171,8 +171,9 @@ fn get_args_fields_doc(macro_impl_file_ast: &File, args: &Args, env: &ExecEnv) -
                                     }),
                                 path: Path { segments, .. },
                                 ..
-                            }) => match segments.first().unwrap() {
-                                PathSegment { ident, .. } => match *ident == "doc" {
+                            }) => {
+                                let PathSegment { ident, .. } = segments.first().unwrap();
+                                match *ident == "doc" {
                                     true => FieldDoc::builder()
                                         .ident(f.ident.clone().unwrap())
                                         .doc(lit_str.value())
@@ -182,8 +183,8 @@ fn get_args_fields_doc(macro_impl_file_ast: &File, args: &Args, env: &ExecEnv) -
                                         .ident(f.ident.clone().unwrap())
                                         .ty(f.ty.clone())
                                         .build(),
-                                },
-                            },
+                                }
+                            }
                             _ => unimplemented!(),
                         })
                         .collect::<Vec<_>>()
