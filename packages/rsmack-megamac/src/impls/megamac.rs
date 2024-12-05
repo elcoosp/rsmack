@@ -105,14 +105,14 @@ pub fn exec(args: Args, env: ExecEnv) -> TokenStream {
         },
     };
 
-    let consts = fields_doc.iter().map(|fd| {
-        let const_id = get_arg_field_const_id(fd);
-        let ty = fd.ty.clone();
-        quote! {
-            static #const_id:&'static str = std::any::type_name::<#ty>();
+    // let consts = fields_doc.iter().map(|fd| {
+    //     let const_id = get_arg_field_const_id(fd);
+    //     let ty = fd.ty.clone();
+    //     quote! {
+    //         static #const_id:&'static str = std::any::type_name::<#ty>();
 
-        }
-    });
+    //     }
+    // });
     quote! {
         #imports
         // #(#consts)*
@@ -147,7 +147,7 @@ struct FieldDoc {
 }
 fn get_args_fields_doc(macro_impl_file_ast: &File, args: &Args, env: &ExecEnv) -> Vec<FieldDoc> {
     let args_item = macro_impl_file_ast.items.iter().find(|i| match i {
-        Item::Struct(ItemStruct { ident, .. }) => ident.to_string() == env.exec_args_ident,
+        Item::Struct(ItemStruct { ident, .. }) => *ident == env.exec_args_ident,
         _ => false,
     });
 

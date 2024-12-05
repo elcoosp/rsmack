@@ -36,7 +36,7 @@ pub fn folder_iso_struct(
     // TODO find a way to remove maybe ?
     from_crate: &str,
     #[builder(default = false)] log_enabled: bool,
-) -> () {
+) {
     use build_print::*;
     use stringcase::*;
     macro_rules! log {
@@ -87,8 +87,8 @@ pub fn folder_iso_struct(
 }
 
 fn parse_id_maybe_raw(s: &str) -> Ident {
-    let id = syn::parse_str::<Ident>(&s).unwrap_or_else(|_| Ident::new_raw(&s, Span::call_site()));
-    id
+    
+    syn::parse_str::<Ident>(s).unwrap_or_else(|_| Ident::new_raw(s, Span::call_site()))
 }
 
 /// Generate file in `OUTDIR`
@@ -102,6 +102,6 @@ pub fn generate_file<P: AsRef<Path>>(path: P, text: &[u8]) {
 }
 pub fn package_src_folder() -> PathBuf {
     let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
-    let path = PathBuf::from(manifest_dir).join("src");
-    path
+    
+    PathBuf::from(manifest_dir).join("src")
 }

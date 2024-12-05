@@ -1,3 +1,4 @@
+#![allow(clippy::crate_in_macro_def)]
 //! Macro utils to call a given **proc-macro** implementation with attrs & item parsing boilerplate handled with [darling]
 
 /// Call [`crate::exec::call`] on `impls` mod with `Args` args ident
