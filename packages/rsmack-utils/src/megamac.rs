@@ -1,3 +1,4 @@
+//! [rsmack-megamac](../rsmack_megamac/index.html) related utils
 use bon::{builder, Builder};
 
 use crate::logr::Logr;

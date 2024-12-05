@@ -1,7 +1,7 @@
 #![allow(clippy::crate_in_macro_def)]
 //! Macro utils to call a given **proc-macro** implementation with attrs & item parsing boilerplate handled with [darling]
 
-/// Call [`crate::exec::call`] on `impls` mod with `Args` args ident
+/// Use [`call_attr_proc_macro`] on `impls` mod with `Args` args ident
 #[macro_export]
 macro_rules! call_attr_impls_with_args {
     (
@@ -21,7 +21,7 @@ macro_rules! call_attr_impls_with_args {
     };
 }
 
-/// Call a proc-macro implementation function named `exec`.
+/// Call an attribute proc-macro implementation function named `exec`.
 ///
 /// This macro is **proc-macro only**.
 /// Call a proc-macro implementation function named `exec`,
@@ -66,7 +66,7 @@ macro_rules! call_attr_proc_macro {
         .into()
     }};
 }
-
+/// Use [`call_func_proc_macro`] on `impls` mod with `Args` args ident
 #[macro_export]
 macro_rules! call_func_impls_with_args {
     (
@@ -76,6 +76,7 @@ macro_rules! call_func_impls_with_args {
         rsmack_utils::exec::call_func_proc_macro!(impls, Args, $exec_fn_mod_ident, $args_tok_stream)
     };
 }
+/// Use [`call_derive_proc_macro`] on `impls` mod with `Args` args ident
 #[macro_export]
 macro_rules! call_derive_impls_with_args {
     (
@@ -90,7 +91,7 @@ macro_rules! call_derive_impls_with_args {
         )
     };
 }
-
+/// Call a function proc-macro implementation function named `exec`.
 #[macro_export]
 macro_rules! call_func_proc_macro {
     (
@@ -127,6 +128,7 @@ macro_rules! call_func_proc_macro {
     }};
 }
 
+/// Call a derive proc-macro implementation function named `exec`.
 #[macro_export]
 macro_rules! call_derive_proc_macro {
     (

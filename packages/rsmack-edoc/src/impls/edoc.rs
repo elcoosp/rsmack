@@ -22,6 +22,7 @@ pub struct EdocField {
 }
 #[derive(Debug, FromMeta)]
 pub struct Args {
+    /// The [syn::Path] to the module (`self` not handled) you want tu pull constants from
     from: syn::Path,
 }
 #[derive(Debug, FromDeriveInput)]

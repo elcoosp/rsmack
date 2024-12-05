@@ -4,7 +4,7 @@ use proc_macro_error2::*;
 use rsmack_utils::*;
 mod impls;
 
-/// Declare a mega macro
+/// Declare a mega macro of any kind with automated parameters documentation
 #[proc_macro_error]
 #[proc_macro]
 pub fn megamac(args: TokenStream) -> TokenStream {
