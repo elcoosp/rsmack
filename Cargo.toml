@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "packages/rsmack-wrap",
+    "packages/rsmack-edoc",
     "packages/rsmack-utils",
     "packages/rsmack-fs",
     "packages/rsmack-megamac",
