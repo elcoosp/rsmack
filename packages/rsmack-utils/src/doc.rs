@@ -13,8 +13,8 @@ macro_rules! cl {
     ($id:ident!) => {
         concat!(stringify!($id), "!")
     };
-    ($($rest:ident)::*!) => {
-        concat!("[`", cl!($($rest)*!), "`]")
+    ($($id:ident)::*!) => {
+        concat!("[`", cl!($($id)*!), "`]")
     };
     ($fst:ident $($id:ident)*!) => {
         concat!(stringify!($fst), "::", cl!($($id)*!))
@@ -22,8 +22,8 @@ macro_rules! cl {
     ($id:ident) => {
         stringify!($id)
     };
-    ($($rest:ident)::*) => {
-        concat!("[`", cl!($($rest)*), "`]")
+    ($($id:ident)::*) => {
+        concat!("[`", cl!($($id)*), "`]")
     };
     ($fst:ident $($id:ident)*) => {
         concat!(stringify!($fst), "::", cl!($($id)*))
