@@ -1,6 +1,8 @@
 //! This module expose [`Logr`] a **proc-macro only** logger wrapper around [`proc_macro_error2`]
 use proc_macro2::Span;
 use std::fmt::Display;
+
+use crate::cl;
 #[derive(Debug, bon::Builder)]
 #[builder(on(String, into))]
 /// Logger around [`proc_macro_error2`], **only for proc-macros**
@@ -9,7 +11,7 @@ pub struct Logr {
 }
 macro_rules! emit_msg_with_span {
     ($ident:ident, $ret:ty) => {
-        #[doc = concat!("Call [`proc_macro_error2::",stringify!($ident),"!`] with [`Self::prefix`]")]
+        #[doc = concat!("Call ", cl!(proc_macro_error2::$ident!), " with ", cl!(Self::prefix))]
         pub fn $ident<M: AsRef<str> + Display>(&self, span: Span, msg: M) -> $ret {
             proc_macro_error2::$ident!(span, self.fmt_msg(msg))
         }
@@ -17,7 +19,7 @@ macro_rules! emit_msg_with_span {
 }
 macro_rules! emit_msg {
     ($ident:ident, $ret:ty) => {
-        #[doc = concat!("Call [`proc_macro_error2::",stringify!($ident),"!`] with [`Self::prefix`]")]
+        #[doc = concat!("Call ", cl!(proc_macro_error2::$ident!), " with ", cl!(Self::prefix))]
         pub fn $ident<M: AsRef<str> + Display>(&self, msg: M) -> $ret {
             proc_macro_error2::$ident!(self.fmt_msg(msg))
         }
