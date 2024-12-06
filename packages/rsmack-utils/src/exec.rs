@@ -20,7 +20,25 @@ macro_rules! call_attr_impls_with_args {
         )
     };
 }
-
+/// Build an [ExecEnv](crate::megamac::ExecEnv)
+#[macro_export]
+macro_rules! build_env {
+    (
+        $implementations_mod_ident:ident,
+        $exec_args_ident:ident,
+        $exec_fn_mod_ident:ident
+    ) => {{
+        // This can not be put in the builder otherwise the path is not the caller one
+        let module_path = std::module_path!();
+        rsmack_utils::megamac::ExecEnv::builder(
+            module_path,
+            stringify!($implementations_mod_ident),
+            stringify!($exec_args_ident),
+            stringify!($exec_fn_mod_ident),
+        )
+        .build()
+    }};
+}
 /// Call an attribute proc-macro implementation function named `exec`.
 ///
 /// This macro is **proc-macro only**.
@@ -55,8 +73,7 @@ macro_rules! call_attr_proc_macro {
                     return proc_macro::TokenStream::from(e.write_errors());
                 }
             };
-        let module_path = std::module_path!();
-        let env = rsmack_utils::megamac::ExecEnv::builder(module_path,stringify!($implementations_mod_ident),stringify!($exec_args_ident), stringify!($exec_fn_mod_ident)).build();
+        let env = rsmack_utils::build_env!($implementations_mod_ident, $exec_args_ident, $exec_fn_mod_ident);
 
         crate::$implementations_mod_ident::$exec_fn_mod_ident::exec(
             parsed_args,
@@ -117,8 +134,7 @@ macro_rules! call_func_proc_macro {
                     return proc_macro::TokenStream::from(e.write_errors());
                 }
             };
-        let module_path = std::module_path!();
-        let env = rsmack_utils::megamac::ExecEnv::builder(module_path, stringify!($implementations_mod_ident), stringify!($exec_args_ident), stringify!($exec_fn_mod_ident)).build();
+        let env = rsmack_utils::build_env!($implementations_mod_ident, $exec_args_ident, $exec_fn_mod_ident);
 
         crate::$implementations_mod_ident::$exec_fn_mod_ident::exec(
             parsed_args,
@@ -139,14 +155,11 @@ macro_rules! call_derive_proc_macro {
     ) => {{
         use darling::*;
         let parsed_item = syn::parse_macro_input!($item_tok_stream as syn::DeriveInput);
-        let module_path = std::module_path!();
-        let env = rsmack_utils::megamac::ExecEnv::builder(
-            module_path,
-            stringify!($implementations_mod_ident),
-            stringify!($exec_args_ident),
-            stringify!($exec_fn_mod_ident),
-        )
-        .build();
+        let env = rsmack_utils::build_env!(
+            $implementations_mod_ident,
+            $exec_args_ident,
+            $exec_fn_mod_ident
+        );
         crate::$implementations_mod_ident::$exec_fn_mod_ident::exec(parsed_item, env).into()
     }};
 }
