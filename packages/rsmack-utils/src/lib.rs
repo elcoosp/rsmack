@@ -3,3 +3,4 @@ pub mod exec;
 pub mod fs;
 pub mod logr;
 pub mod megamac;
+pub mod schemars;
