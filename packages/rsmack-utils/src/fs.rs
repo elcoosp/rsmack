@@ -29,7 +29,7 @@ pub fn calling_crate_dir() -> &'static Path {
     calling_crate_dir
 }
 
-/// Generate a struct which fields match a flat folder of rust modules, each exposing at least a same file named **PascalCase** type
+/// Generate a struct which fields match a flat folder of rust modules, each exposing at least a same file named **`PascalCase`** type
 #[builder]
 pub fn folder_iso_struct(
     name: &str,

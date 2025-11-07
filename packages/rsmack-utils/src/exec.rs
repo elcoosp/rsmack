@@ -20,7 +20,7 @@ macro_rules! call_attr_impls_with_args {
         )
     };
 }
-/// Build an [ExecEnv](crate::megamac::ExecEnv)
+/// Build an [`ExecEnv`](crate::megamac::ExecEnv)
 #[macro_export]
 macro_rules! build_env {
     (

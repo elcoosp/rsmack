@@ -90,7 +90,7 @@ pub fn exec(args: Args, env: ExecEnv) -> TokenStream {
         .collect::<Vec<_>>();
 
     let name_str = name.to_string();
-    let kind_str = kind.to_string();
+    let kind_str = kind.clone();
 
     // Generate the main documentation for the macro
     let doc = quote! {

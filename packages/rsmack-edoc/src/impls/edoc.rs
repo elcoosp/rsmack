@@ -151,7 +151,7 @@ fn rm_item_fields_attrs<
                 let replacement_attr = replace_with(field, attr_to_rm, removed_count);
                 field.attrs[i] = replacement_attr;
                 removed_count += 1;
-            };
+            }
         }
     }
     item.clone()
@@ -269,7 +269,7 @@ fn call_site_file_path_from_syn_path(path: syn::Path) -> std::path::PathBuf {
 ///
 /// This function reads the specified source file line by line, identifies `const` declarations,
 /// and extracts their values for supported literal types (strings, booleans, byte strings).
-/// The resolved constants are stored in a HashMap for lookup during documentation generation.
+/// The resolved constants are stored in a `HashMap` for lookup during documentation generation.
 ///
 /// # Supported Constant Types
 /// * `&str` string slices
@@ -278,7 +278,7 @@ fn call_site_file_path_from_syn_path(path: syn::Path) -> std::path::PathBuf {
 ///
 /// # Arguments
 /// * `call_site_file_path` - Path to the source file containing constants
-/// * `resolved_consts` - HashMap to store resolved constant names and values
+/// * `resolved_consts` - `HashMap` to store resolved constant names and values
 /// * `env` - Execution environment for error reporting
 ///
 /// # Limitations

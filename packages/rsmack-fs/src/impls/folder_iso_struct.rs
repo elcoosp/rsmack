@@ -54,7 +54,7 @@ pub fn exec(args: Args, item: ItemStruct, env: ExecEnv) -> TokenStream {
 
     let name = item.ident.clone();
     let name_str = name.to_string();
-    let folder_str = folder.to_string();
+    let folder_str = folder.clone();
     let attrs = item.attrs.clone();
     let generics = item.generics.clone();
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
