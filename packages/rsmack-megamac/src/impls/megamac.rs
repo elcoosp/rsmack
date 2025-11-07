@@ -151,8 +151,9 @@ fn get_macro_impl_file_ast(args: &Args, env: &ExecEnv) -> File {
     let macro_impl_src =
         std::fs::read_to_string(macro_impl_file_path.clone()).unwrap_or_else(|_| {
             panic!(
-                "Failed to get macro_impl_src of {} at {macro_impl_file_path:?}",
-                args.name
+                "Failed to get macro_impl_src of {} at {}",
+                args.name,
+                macro_impl_file_path.display()
             )
         });
 
