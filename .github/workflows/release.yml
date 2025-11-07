@@ -34,7 +34,7 @@ jobs:
           dry-run: false
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           name: Release v${{ steps.tag.outputs.VERSION }}
           body: |
@@ -46,18 +46,18 @@ jobs:
 
             - **megamac** - Procedural macro generator with automatic documentation
             - **edoc** - Enhanced documentation macro with constant evaluation
-            - **folder_iso_struct** - Compile-time folder structure mirroring
+            - **fs** - Compile-time folder structure mirroring
             - **wrap** - Struct field type wrapper
-            - **rsmack-utils** - Shared utilities for macro development
+            - **utils** - Shared utilities for macro development
 
             ## Usage
 
             ```toml
             [dependencies]
-            megamac = "${{ steps.tag.outputs.VERSION }}"
-            edoc = "${{ steps.tag.outputs.VERSION }}"
-            folder_iso_struct = "${{ steps.tag.outputs.VERSION }}"
-            wrap = "${{ steps.tag.outputs.VERSION }}"
+            rsmack-megamac = "${{ steps.tag.outputs.VERSION }}"
+            rsmack-edoc = "${{ steps.tag.outputs.VERSION }}"
+            rsmack-fs = "${{ steps.tag.outputs.VERSION }}"
+            rsmack-wrap = "${{ steps.tag.outputs.VERSION }}"
             rsmack-utils = "${{ steps.tag.outputs.VERSION }}"
             ```
           draft: false
