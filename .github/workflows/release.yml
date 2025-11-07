@@ -3,7 +3,7 @@ name: Release Crates
 on:
   push:
     tags:
-      - "v*" # Trigger on tags starting with 'v'
+      - "v*.*.*" # Trigger on tags starting with 'v'
 
 env:
   CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
