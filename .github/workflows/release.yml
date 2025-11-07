@@ -1,0 +1,163 @@
+name: Release Crates
+
+on:
+  push:
+    tags:
+      - "v*" # Trigger on tags starting with 'v'
+
+env:
+  CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
+
+jobs:
+  release:
+    name: Release Workspace Crates
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache cargo registry
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Get tag version
+        id: tag
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Verify tag matches version
+        run: |
+          # Check if any crate version matches the tag
+          if ! cargo metadata --format-version=1 --no-deps | jq -e --arg version "${{ steps.tag.outputs.VERSION }}" '.packages[] | select(.version == $version)' > /dev/null; then
+            echo "Error: No crate version matches tag v${{ steps.tag.outputs.VERSION }}"
+            exit 1
+          fi
+
+      - name: Publish crates in dependency order
+        run: |
+          # Get workspace members and publish in dependency order
+          MEMBERS=$(cargo metadata --format-version=1 --no-deps | jq -r '.workspace_members[]' | cut -d' ' -f1)
+
+          # Function to publish crate if it hasn't been published yet
+          publish_crate() {
+            local crate=$1
+            echo "📦 Checking if $crate needs publishing..."
+
+            # Check if crate is already published at this version
+            if cargo search --limit 1 "$crate" | grep -q "^$crate = \"${{ steps.tag.outputs.VERSION }}\""; then
+              echo "✅ $crate v${{ steps.tag.outputs.VERSION }} is already published"
+              return 0
+            fi
+
+            echo "🚀 Publishing $crate v${{ steps.tag.outputs.VERSION }}..."
+
+            # Try to publish with retries for network issues
+            for i in {1..3}; do
+              if cargo publish -p "$crate" --allow-dirty; then
+                echo "✅ Successfully published $crate"
+                # Wait a bit between publishes to avoid rate limiting
+                sleep 10
+                return 0
+              else
+                echo "⚠️ Attempt $i failed, retrying in 10 seconds..."
+                sleep 10
+              fi
+            done
+
+            echo "❌ Failed to publish $crate after 3 attempts"
+            return 1
+          }
+
+          # Publish all workspace members
+          for member in $MEMBERS; do
+            if ! publish_crate "$member"; then
+              exit 1
+            fi
+          done
+
+          echo "🎉 All crates published successfully!"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Release v${{ steps.tag.outputs.VERSION }}
+          body: |
+            # RSMACK v${{ steps.tag.outputs.VERSION }}
+
+            ## Published Crates
+
+            Automated release of all workspace crates:
+
+            - **megamac** - Procedural macro generator with automatic documentation
+            - **edoc** - Enhanced documentation macro with constant evaluation
+            - **folder_iso_struct** - Compile-time folder structure mirroring
+            - **wrap** - Struct field type wrapper
+            - **rsmack-utils** - Shared utilities for macro development
+
+            ## Usage
+
+            ```toml
+            [dependencies]
+            megamac = "${{ steps.tag.outputs.VERSION }}"
+            edoc = "${{ steps.tag.outputs.VERSION }}"
+            folder_iso_struct = "${{ steps.tag.outputs.VERSION }}"
+            wrap = "${{ steps.tag.outputs.VERSION }}"
+            ```
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Optional: Test before release (recommended)
+  test:
+    name: Test and Validate
+    runs-on: ubuntu-latest
+    needs: [release] # Run tests before release for safety
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-test-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-test-
+
+      - name: Run tests
+        run: |
+          cargo test --all-features --workspace
+
+      - name: Check formatting
+        run: cargo fmt -- --check
+
+      - name: Clippy check
+        run: cargo clippy --workspace --all-features -- -D warnings
+
+      - name: Build in release mode
+        run: cargo build --release --workspace
