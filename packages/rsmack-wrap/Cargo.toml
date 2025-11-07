@@ -3,7 +3,7 @@ name = "rsmack-wrap"
 version = "0.7.0"
 edition = "2021"
 description = "Struct field type wrapper"
-licese = "MIT"
+license = "MIT"
 [lib]
 proc-macro = true
 [dependencies]
