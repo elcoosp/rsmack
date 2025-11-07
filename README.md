@@ -149,11 +149,11 @@ Add the desired crates to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-megamac = "0.1"
-edoc = "0.1"
-folder_iso_struct = "0.1"
-wrap = "0.1"
-rsmack-utils = "0.1"  # Shared utilities
+rsmack-megamac = "0.7"
+rsmack-edoc = "0.7"
+rsmack-fs = "0.7"
+rsmack-wrap = "0.7"
+rsmack-utils = "0.7"  # Shared utilities
 ```
 
 ## Key Features Across Crates
