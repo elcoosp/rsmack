@@ -1,3 +1,9 @@
+//! Procedural macro for generating other procedural macros with documentation and error handling.
+//!
+//! This module provides the `megamac` procedural macro that can generate different types of
+//! procedural macros (function-like, attribute, derive) with automatic documentation generation
+//! and proper error handling.
+
 use bon::Builder;
 use darling::FromMeta;
 use proc_macro2::TokenStream;
@@ -5,26 +11,37 @@ use quote::*;
 use rsmack_utils::{fs::package_src_folder, megamac::ExecEnv};
 use strum::Display;
 use syn::*;
+
+/// Represents the kind of procedural macro to generate.
 #[derive(Debug, PartialEq, Display, FromMeta)]
 enum MacroKind {
+    /// Function-like procedural macro (e.g., `my_macro!()`)
     Func,
+    /// Attribute procedural macro (e.g., `#[my_macro]`)
     Attr,
+    /// Derive procedural macro (e.g., `#[derive(MyMacro)]`)
     Derive,
 }
+
+/// Arguments for configuring the megamac macro generation.
 #[derive(Debug, FromMeta)]
 pub struct Args {
-    /// [`MacroKind`] as [`Ident`], either `Attr` or `Func`
+    /// The type of procedural macro to generate as [`Ident`]
     kind: Ident,
 
-    /// Macro name as [`Ident`]
+    /// Name of the macro to generate as [`Ident`]
     name: Ident,
 
+    /// The receiver type for attribute macros (only used with [`MacroKind::Attr`])
     #[darling(default)]
-    /// The receiver [syn] type of the macro attr, only for [`MacroKind::Attr`]
     receiver: Option<Ident>,
 }
 
 impl From<Ident> for MacroKind {
+    /// Converts an [`Ident`] to a [`MacroKind`].
+    ///
+    /// # Panics
+    /// Panics if the identifier doesn't match "Attr", "Func", or "Derive".
     fn from(value: Ident) -> Self {
         match value.to_string().as_str() {
             "Attr" => Self::Attr,
@@ -35,8 +52,18 @@ impl From<Ident> for MacroKind {
     }
 }
 
-// FIXME Does not work correctly on multi line comments because this is maybe in ast many meta items, hence the flat_map may not be valid
-/// Execute megamac macro
+/// Executes the megamac macro to generate a procedural macro implementation.
+///
+/// This function takes configuration arguments and an execution environment,
+/// then generates the appropriate procedural macro implementation with
+/// automatically generated documentation.
+///
+/// # Parameters
+/// - `args`: Configuration arguments for the macro
+/// - `env`: Execution environment containing context and utilities
+///
+/// # Returns
+/// A [`TokenStream`] containing the generated procedural macro implementation.
 pub fn exec(args: Args, env: ExecEnv) -> TokenStream {
     let name = args.name.clone();
     let receiver = args.receiver.clone();
@@ -47,6 +74,7 @@ pub fn exec(args: Args, env: ExecEnv) -> TokenStream {
     let macro_impl_file_ast = get_macro_impl_file_ast(&args, &env);
     let fields_doc = get_args_fields_doc(&macro_impl_file_ast, &args, &env);
 
+    // Format field documentation for inclusion in the generated macro docs
     let formatted_fields_doc = fields_doc
         .iter()
         .map(|fd| {
@@ -57,19 +85,22 @@ pub fn exec(args: Args, env: ExecEnv) -> TokenStream {
                 fd.ty.to_token_stream().to_string().replace(' ', ""),
             );
 
-            // FIXME get_arg_field_const_id is useless since doc can just accept a literal, maybe create a macro edoc ?
-            // let const_id = get_arg_field_const_id(fd);
             quote! { #[doc = #template_without_ty_qualified_path]}
         })
         .collect::<Vec<_>>();
+
     let name_str = name.to_string();
     let kind_str = kind.to_string();
+
+    // Generate the main documentation for the macro
     let doc = quote! {
         #[doc = concat!(#name_str, " procedural macro (", #kind_str, ").")]
         #[doc ="# Parameters"]
         #(#formatted_fields_doc)*
         #[doc ="# Examples"]
     };
+
+    // Generate the appropriate macro implementation based on the kind
     let macro_impl = match args.kind.into() {
         MacroKind::Derive => {
             let derive_name = Ident::new(&stringcase::pascal_case(&name_str), name.span());
@@ -96,32 +127,22 @@ pub fn exec(args: Args, env: ExecEnv) -> TokenStream {
             }
         },
     };
-    // let get_arg_field_const_id = |fd: &FieldDoc| {
-    //     Ident::new(
-    //         &format!(
-    //             "{}_ARGS_FIELD_TYPE_QUALIFIED_PATH_{}",
-    //             name.to_string().to_uppercase(),
-    //             fd.ident.to_string().to_uppercase()
-    //         ),
-    //         fd.ident.span(),
-    //     )
-    // };
-    // let consts = fields_doc.iter().map(|fd| {
-    //     let const_id = get_arg_field_const_id(fd);
-    //     let ty = fd.ty.clone();
-    //     quote! {
-    //         static #const_id:&'static str = std::any::type_name::<#ty>();
 
-    //     }
-    // });
     quote! {
         #imports
-        // #(#consts)*
         #doc
         #macro_impl
     }
 }
 
+/// Parses and returns the AST of the macro implementation file.
+///
+/// # Arguments
+/// - `args`: The macro configuration arguments
+/// - `env`: The execution environment
+///
+/// # Panics
+/// Panics if the file cannot be read or parsed.
 fn get_macro_impl_file_ast(args: &Args, env: &ExecEnv) -> File {
     let package_src_folder = package_src_folder();
     let macro_impl_file_path = package_src_folder
@@ -136,19 +157,37 @@ fn get_macro_impl_file_ast(args: &Args, env: &ExecEnv) -> File {
         });
 
     match syn::parse_file(&macro_impl_src) {
-        Ok(x)=> x,
+        Ok(x) => x,
         Err(e) => env.logr.abort_call_site(format!(
-        "Failed to parse macro_impl_src {}, this may happen for no real reason in your IDE, check that your project still build with cargo: {e:?}",
-        args.name.clone()
-    ))}
+            "Failed to parse macro_impl_src {}, this may happen for no real reason in your IDE, check that your project still build with cargo: {e:?}",
+            args.name.clone()
+        ))
+    }
 }
 
+/// Documentation information for a field in the macro arguments struct.
 #[derive(Debug, Builder)]
 struct FieldDoc {
+    /// The field identifier
     pub ident: Ident,
+    /// The field documentation string, if present
     pub doc: Option<String>,
+    /// The field type
     pub ty: Type,
 }
+
+/// Extracts documentation for all fields in the macro arguments struct.
+///
+/// # Arguments
+/// - `macro_impl_file_ast`: The AST of the macro implementation file
+/// - `args`: The macro configuration arguments
+/// - `env`: The execution environment
+///
+/// # Returns
+/// A vector of [`FieldDoc`] containing documentation for each field.
+///
+/// # Aborts
+/// Aborts compilation if the arguments struct cannot be found.
 fn get_args_fields_doc(macro_impl_file_ast: &File, args: &Args, env: &ExecEnv) -> Vec<FieldDoc> {
     let args_item = macro_impl_file_ast.items.iter().find(|i| match i {
         Item::Struct(ItemStruct { ident, .. }) => *ident == env.exec_args_ident,
@@ -163,7 +202,7 @@ fn get_args_fields_doc(macro_impl_file_ast: &File, args: &Args, env: &ExecEnv) -
                     f.attrs
                         .iter()
                         .map(|a| match a.meta.clone() {
-                            // TODO may not have a meta byt we should still return a FieldDoc
+                            // Extract documentation from #[doc = "..."] attributes
                             Meta::NameValue(MetaNameValue {
                                 value:
                                     Expr::Lit(ExprLit {
