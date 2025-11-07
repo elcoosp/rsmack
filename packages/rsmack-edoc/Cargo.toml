@@ -2,6 +2,8 @@
 name = "rsmack-edoc"
 version = "0.7.0"
 edition = "2021"
+description = "Enhanced documentation macro with constant evaluation"
+license = "MIT"
 [lib]
 proc-macro = true
 [dependencies]

@@ -2,6 +2,8 @@
 name = "rsmack-utils"
 version = "0.7.0"
 edition = "2021"
+description = "Utils shared between rsmack crates"
+license = "MIT"
 [dependencies]
 darling = "0.20.10"
 proc-macro-error2 = "2.0.1"

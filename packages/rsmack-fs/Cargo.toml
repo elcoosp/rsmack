@@ -2,6 +2,8 @@
 name = "rsmack-fs"
 version = "0.7.0"
 edition = "2021"
+description = "Compile-time folder structure mirroring"
+license = "MIT"
 [lib]
 proc-macro = true
 [dependencies]

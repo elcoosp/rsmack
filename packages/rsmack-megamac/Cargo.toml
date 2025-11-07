@@ -2,6 +2,8 @@
 name = "rsmack-megamac"
 version = "0.7.0"
 edition = "2021"
+description = "Procedural macro generator with automatic documentation and error handling"
+license = "MIT"
 [lib]
 proc-macro = true
 [dependencies]
