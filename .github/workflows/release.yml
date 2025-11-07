@@ -3,13 +3,14 @@ name: Release Crates
 on:
   push:
     tags:
-      - "v*.*.*" # Trigger on tags starting with 'v'
+      - "v*" # Trigger on tags starting with 'v'
 
 env:
   CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
 
 jobs:
   release:
+    needs: [test]
     name: Release Workspace Crates
     runs-on: ubuntu-latest
 
@@ -48,10 +49,49 @@ jobs:
             exit 1
           fi
 
+      - name: Convert workspace dependencies to version dependencies
+        run: |
+          # Convert all workspace path dependencies to version dependencies for publishing
+          MEMBERS=$(cargo metadata --format-version=1 --no-deps | jq -r '.workspace_members[]' | cut -d' ' -f1)
+
+          for member in $MEMBERS; do
+            echo "📝 Converting workspace dependencies to version dependencies for $member"
+
+            # Get the Cargo.toml path for this member
+            CARGO_TOML_PATH=$(cargo metadata --format-version=1 --no-deps | jq -r --arg member "$member" '.packages[] | select(.name == $member) | .manifest_path')
+
+            # Create a backup
+            cp "$CARGO_TOML_PATH" "${CARGO_TOML_PATH}.backup"
+
+            # Convert path dependencies to version dependencies
+            # This uses sed to replace path = "../some-crate" with version = "TAG_VERSION"
+            for dep in $MEMBERS; do
+              if [ "$dep" != "$member" ]; then
+                # Replace path dependencies with version
+                sed -i "s|path = \"../$dep\"|version = \"${{ steps.tag.outputs.VERSION }}\"|g" "$CARGO_TOML_PATH"
+                # Also handle different path formats
+                sed -i "s|path = \".*/$dep\"|version = \"${{ steps.tag.outputs.VERSION }}\"|g" "$CARGO_TOML_PATH"
+              fi
+            done
+
+            echo "✅ Updated dependencies for $member"
+          done
+
       - name: Publish crates in dependency order
         run: |
           # Get workspace members and publish in dependency order
+          # We need to determine the correct order based on dependencies
           MEMBERS=$(cargo metadata --format-version=1 --no-deps | jq -r '.workspace_members[]' | cut -d' ' -f1)
+
+          # Function to get dependencies for a crate
+          get_dependencies() {
+            local crate=$1
+            cargo metadata --format-version=1 --no-deps | \
+            jq -r --arg crate "$crate" '
+              .packages[] | select(.name == $crate) |
+              .dependencies[] | select(.source == null) | .name
+            '
+          }
 
           # Function to publish crate if it hasn't been published yet
           publish_crate() {
@@ -71,11 +111,11 @@ jobs:
               if cargo publish -p "$crate" --allow-dirty; then
                 echo "✅ Successfully published $crate"
                 # Wait a bit between publishes to avoid rate limiting
-                sleep 10
+                sleep 30
                 return 0
               else
-                echo "⚠️ Attempt $i failed, retrying in 10 seconds..."
-                sleep 10
+                echo "⚠️ Attempt $i failed, retrying in 30 seconds..."
+                sleep 30
               fi
             done
 
@@ -83,14 +123,52 @@ jobs:
             return 1
           }
 
-          # Publish all workspace members
+          # Determine publishing order (utilities first, then dependent crates)
+          # Based on your project structure, rsmack-utils should be published first
+          UTILS_CRATE="rsmack-utils"
+          OTHER_CRATES=()
+
           for member in $MEMBERS; do
-            if ! publish_crate "$member"; then
+            if [ "$member" != "$UTILS_CRATE" ]; then
+              OTHER_CRATES+=("$member")
+            fi
+          done
+
+          # Publish utilities first
+          echo "🔧 Publishing utility crate first..."
+          if ! publish_crate "$UTILS_CRATE"; then
+            echo "❌ Failed to publish $UTILS_CRATE, aborting"
+            exit 1
+          fi
+
+          # Wait longer for crates.io to update
+          echo "⏳ Waiting for crates.io index to update..."
+          sleep 60
+
+          # Publish other crates
+          echo "📦 Publishing remaining crates..."
+          for crate in "${OTHER_CRATES[@]}"; do
+            if ! publish_crate "$crate"; then
+              echo "❌ Failed to publish $crate"
               exit 1
             fi
           done
 
           echo "🎉 All crates published successfully!"
+
+      - name: Restore original Cargo.toml files
+        run: |
+          # Restore the original Cargo.toml files with path dependencies
+          MEMBERS=$(cargo metadata --format-version=1 --no-deps | jq -r '.workspace_members[]' | cut -d' ' -f1)
+
+          for member in $MEMBERS; do
+            CARGO_TOML_PATH=$(cargo metadata --format-version=1 --no-deps | jq -r --arg member "$member" '.packages[] | select(.name == $member) | .manifest_path')
+
+            if [ -f "${CARGO_TOML_PATH}.backup" ]; then
+              mv "${CARGO_TOML_PATH}.backup" "$CARGO_TOML_PATH"
+              echo "✅ Restored original Cargo.toml for $member"
+            fi
+          done
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
@@ -117,8 +195,46 @@ jobs:
             edoc = "${{ steps.tag.outputs.VERSION }}"
             folder_iso_struct = "${{ steps.tag.outputs.VERSION }}"
             wrap = "${{ steps.tag.outputs.VERSION }}"
+            rsmack-utils = "${{ steps.tag.outputs.VERSION }}"
             ```
           draft: false
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  test:
+    name: Test and Validate
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-test-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-test-
+
+      - name: Run tests
+        run: |
+          cargo test --all-features --workspace
+
+      - name: Check formatting
+        run: cargo fmt -- --check
+
+      - name: Clippy check
+        run: cargo clippy --workspace --all-features -- -D warnings
+
+      - name: Build in release mode
+        run: cargo build --release --workspace
