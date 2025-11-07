@@ -1,6 +1,6 @@
 [package]
 name = "rsmack-utils"
-version = "0.0.0"
+version = "0.1.0"
 edition = "2021"
 [dependencies]
 darling = "0.20.10"
