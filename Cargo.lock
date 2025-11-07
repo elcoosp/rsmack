@@ -251,7 +251,7 @@ dependencies = [
 
 [[package]]
 name = "rsmack-edoc"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "const_format",
  "darling",
@@ -265,7 +265,7 @@ dependencies = [
 
 [[package]]
 name = "rsmack-fs"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "darling",
  "proc-macro-error2",
@@ -279,7 +279,7 @@ dependencies = [
 
 [[package]]
 name = "rsmack-megamac"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "bon",
  "darling",
@@ -295,7 +295,7 @@ dependencies = [
 
 [[package]]
 name = "rsmack-utils"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "bon",
  "build-print",
@@ -309,7 +309,7 @@ dependencies = [
 
 [[package]]
 name = "rsmack-wrap"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "darling",
  "proc-macro-error2",
