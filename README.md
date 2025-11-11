@@ -3,6 +3,99 @@
 RSMACK is a collection of utilities designed to enhance procedural macro creation in Rust. It provides tools for generating documentation, handling file structures, type wrapping, and macro generation with proper error handling.
 
 ## Crates
+Here's an improved version of the `megamac` section that provides more technical details about its implementation:
+
+## Improved megamac Section
+
+### 1. megamac
+**Procedural macro generator with automatic documentation and error handling**
+
+The `megamac` crate provides a meta-macro that generates different types of procedural macros (function-like, attribute, derive) with automatic documentation generation and proper error handling.
+
+#### How It Works
+Under the hood, `megamac` generates a procedural macro that:
+- Automatically includes `#[proc_macro_error]` for enhanced error handling
+- Sets up the appropriate `#[proc_macro]`, `#[proc_macro_attribute]`, or `#[proc_macro_derive]` attribute
+- Delegates execution to your implementation module
+
+The generated macro structure:
+```rust
+#[proc_macro_error]
+#[proc_macro] // or #[proc_macro_attribute]/#[proc_macro_derive]
+pub fn your_macro_name(args: TokenStream) -> TokenStream {
+    rsmack_utils::exec::call_func_impls_with_args!(your_macro_name, args)
+}
+```
+
+#### Implementation Requirements
+You must provide an implementation module with the following structure:
+
+**For function-like macros:**
+```rust
+// In impls/your_macro_name.rs
+pub fn exec(args: Args, env: ExecEnv) -> TokenStream {
+    // Your macro implementation here
+    // Returns TokenStream
+}
+```
+
+**For attribute macros (with receiver):**
+```rust
+// In impls/your_attribute_macro.rs
+pub fn exec(args: Args, item: ItemStruct, env: ExecEnv) -> TokenStream {
+    // Your macro implementation here
+    // 'item' contains the struct this attribute is applied to
+    // Returns TokenStream
+}
+```
+
+#### Features:
+- **Automatic Boilerplate**: Generates proper procedural macro attributes and error handling
+- **Implementation Delegation**: Routes execution to your custom implementation module
+- **Multiple Macro Types**: Supports function-like, attribute, and derive macros
+- **Field Documentation**: Automatically documents macro arguments and their types
+- **Error Handling**: Built-in error handling with `proc_macro_error2`
+
+#### Usage Example:
+```rust
+use megamac::megamac;
+
+// Generate a function-like procedural macro
+megamac! {
+    kind = Func,
+    name = my_function_macro,
+    // Creates: impls/my_function_macro/mod.rs with exec_fn module
+}
+
+// Generate an attribute macro with struct receiver
+megamac! {
+    kind = Attr,
+    name = my_attribute_macro,
+    receiver = ItemStruct,  // The type this attribute applies to
+    // Creates: impls/my_attribute_macro/mod.rs with exec_fn module
+    // that receives ItemStruct as parameter
+}
+
+// Generate a derive macro
+megamac! {
+    kind = Derive,
+    name = MyDeriveMacro,
+    // Creates: impls/MyDeriveMacro/mod.rs with exec_fn module
+}
+```
+
+#### Implementation Structure
+After generating with `megamac`, your crate should have this structure:
+```
+your_macro_crate/
+├── src/
+│   ├── lib.rs              # Contains the generated macro
+│   └── impls/
+│       ├── your_macro_name.rs # Your implementation
+│       └── mod.rs          # Module declarations
+```
+
+This structure ensures clean separation between the macro boilerplate and your actual implementation logic.
 
 ### 1. megamac
 **Procedural macro generator with automatic documentation and error handling**
