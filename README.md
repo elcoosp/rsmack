@@ -64,7 +64,6 @@ use megamac::megamac;
 megamac! {
     kind = Func,
     name = my_function_macro,
-    // Creates: impls/my_function_macro/mod.rs with exec_fn module
 }
 
 // Generate an attribute macro with struct receiver
@@ -72,15 +71,12 @@ megamac! {
     kind = Attr,
     name = my_attribute_macro,
     receiver = ItemStruct,  // The type this attribute applies to
-    // Creates: impls/my_attribute_macro/mod.rs with exec_fn module
-    // that receives ItemStruct as parameter
 }
 
 // Generate a derive macro
 megamac! {
     kind = Derive,
     name = MyDeriveMacro,
-    // Creates: impls/MyDeriveMacro/mod.rs with exec_fn module
 }
 ```
 
