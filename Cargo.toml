@@ -3,6 +3,7 @@ members = [
     "packages/rsmack-wrap",
     "packages/rsmack-edoc",
     "packages/rsmack-utils",
+    "packages/rsmack-seanum",
     "packages/rsmack-fs",
     "packages/rsmack-megamac",
 ]

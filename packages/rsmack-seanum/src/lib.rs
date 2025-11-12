@@ -1,0 +1,3 @@
+use rsmack_megamac::*;
+mod impls;
+megamac!(kind = Attr, name = seanum, receiver = ItemEnum);

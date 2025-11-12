@@ -63,7 +63,13 @@ pub fn folder_iso_struct(
         .map(|path| {
             let module_path = path.unwrap().path();
             let struct_folder_file_stem = module_path.file_stem().unwrap().to_str().unwrap();
-            let field_ty_name = pascal_case_with_sep(struct_folder_file_stem, "_");
+            let opts = stringcase::Options {
+                separate_before_non_alphabets: true,
+                separate_after_non_alphabets: true,
+                separators: "_",
+                keep: "",
+            };
+            let field_ty_name = pascal_case_with_options(struct_folder_file_stem, &opts);
             let struct_mod_id = parse_id_maybe_raw(struct_folder_file_stem);
             let import_path = quote! {crate::#struct_mod_folder_id::#struct_mod_id};
             let field_ty_id = parse_id_maybe_raw(&field_ty_name);
