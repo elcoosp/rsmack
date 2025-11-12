@@ -1,11 +1,10 @@
+
+
 # RSMACK - Rust Macro Enhancement Utilities
 
 RSMACK is a collection of utilities designed to enhance procedural macro creation in Rust. It provides tools for generating documentation, handling file structures, type wrapping, and macro generation with proper error handling.
 
 ## Crates
-Here's an improved version of the `megamac` section that provides more technical details about its implementation:
-
-## Improved megamac Section
 
 ### 1. megamac
 **Procedural macro generator with automatic documentation and error handling**
@@ -93,42 +92,61 @@ your_macro_crate/
 
 This structure ensures clean separation between the macro boilerplate and your actual implementation logic.
 
-### 1. megamac
-**Procedural macro generator with automatic documentation and error handling**
+### 2. seanum
+**SeaORM enum generator with automatic attribute and derive injection**
 
-The `megamac` crate provides a meta-macro that can generate different types of procedural macros (function-like, attribute, derive) with automatic documentation generation and proper error handling.
+The `seanum` crate provides a procedural macro that transforms a simple Rust enum into a fully-featured SeaORM active enum with database mapping capabilities. It automatically adds the necessary attributes, derives, and implementations to make the enum compatible with SeaORM's entity system.
+
+#### How It Works
+The `seanum` macro processes an enum definition and:
+- Adds necessary imports for SeaORM, serde, and fake
+- Adds a derive macro with various traits for database compatibility
+- Adds a `#[sea_orm(...)]` attribute to the enum with database mapping information
+- Adds `#[sea_orm(string_value = "...")]` attributes to each variant
+- Converts the enum name to snake_case for database naming conventions
 
 #### Features:
-- **Automatic Documentation**: Generates comprehensive documentation for your macros
-- **Error Handling**: Built-in error handling with `proc_macro_error2`
-- **Multiple Macro Types**: Supports function-like, attribute, and derive macros
-- **Field Documentation**: Automatically documents macro arguments and their types
+- **Automatic SeaORM Integration**: Adds all necessary attributes and derives for SeaORM compatibility
+- **Database Mapping**: Maps enum variants to their string representations in the database
+- **Serialization Support**: Automatically adds serde serialization and deserialization
+- **Test Data Generation**: Includes fake data generation support for testing
+- **Naming Convention Handling**: Automatically converts enum names to snake_case for database use
 
 #### Usage Example:
 ```rust
-use megamac::megamac;
+use rsmack::seanum;
 
-// Generate a function-like procedural macro
-megamac! {
-    kind = Func,
-    name = my_function_macro,
-}
-
-// Generate an attribute macro
-megamac! {
-    kind = Attr,
-    name = my_attribute_macro,
-    receiver = ItemStruct,  // The type this attribute applies to
-}
-
-// Generate a derive macro
-megamac! {
-    kind = Derive,
-    name = MyDeriveMacro,
+#[seanum(rs_type = String, db_type = "Enum")]
+pub enum SwitchAction {
+    SendEmail,
+    SendSms,
 }
 ```
 
-### 2. edoc
+This expands to:
+```rust
+use fake::Dummy;
+use sea_orm::entity::prelude::*;
+use sea_orm_migration::prelude::*;
+use serde::{Deserialize, Serialize};
+
+#[derive(
+    Clone, Dummy, Debug, PartialEq, EnumIter, DeriveActiveEnum, Eq, Serialize, Deserialize,
+)]
+#[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "switch_action")]
+pub enum SwitchAction {
+    #[sea_orm(string_value = "SendEmail")]
+    SendEmail,
+    #[sea_orm(string_value = "SendSms")]
+    SendSms,
+}
+```
+
+#### Parameters:
+- `rs_type` (Ident): The Rust type that represents the enum in the database (e.g., `String`, `i32`)
+- `db_type` (LitStr): The database type for the enum (e.g., `"Enum"`, `"Text"`)
+
+### 3. edoc
 **Enhanced documentation macro with constant evaluation**
 
 The `edoc` macro generates documentation for struct fields by concatenating string literals and constants at compile time, enabling dynamic documentation generation.
@@ -176,7 +194,7 @@ struct AppConfig {
 }
 ```
 
-### 3. folder_iso_struct
+### 4. folder_iso_struct
 **Compile-time folder structure mirroring**
 
 This macro generates structs that mirror folder structures at compile time, enabling type-safe access to file contents and metadata.
@@ -201,7 +219,7 @@ struct Templates;
 // at compile time based on your templates folder
 ```
 
-### 4. wrap
+### 5. wrap
 **Struct field type wrapper**
 
 The `wrap` macro automatically wraps struct field types with a specified wrapper type, useful for adding functionality like validation, logging, or transformation.
@@ -239,6 +257,7 @@ Add the desired crates to your `Cargo.toml`:
 ```toml
 [dependencies]
 rsmack-megamac = "0.7"
+rsmack-seanum = "0.7"
 rsmack-edoc = "0.7"
 rsmack-fs = "0.7"
 rsmack-wrap = "0.7"
@@ -262,9 +281,10 @@ Leverages Rust's build system for processing file structures and generating type
 ## Common Use Cases
 
 1. **Macro Development**: Use `megamac` to quickly bootstrap new procedural macros with proper documentation
-2. **Configuration Documentation**: Use `edoc` to generate documentation from constants for configuration structs
-3. **Asset Management**: Use `folder_iso_struct` for type-safe access to static assets
-4. **Validation Wrappers**: Use `wrap` to automatically add validation wrappers to struct fields
+2. **Database Enums**: Use `seanum` to create SeaORM-compatible enums with minimal boilerplate
+3. **Configuration Documentation**: Use `edoc` to generate documentation from constants for configuration structs
+4. **Asset Management**: Use `folder_iso_struct` for type-safe access to static assets
+5. **Validation Wrappers**: Use `wrap` to automatically add validation wrappers to struct fields
 
 ## Requirements
 
