@@ -94,10 +94,10 @@ pub fn exec(args: Args, env: ExecEnv) -> TokenStream {
 
     // Generate the main documentation for the macro
     let doc = quote! {
+        #[doc = include_str!("../README.md")]
         #[doc = concat!(#name_str, " procedural macro (", #kind_str, ").")]
         #[doc ="# Parameters"]
         #(#formatted_fields_doc)*
-        #[doc ="# Examples"]
     };
 
     // Generate the appropriate macro implementation based on the kind
