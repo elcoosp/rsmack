@@ -114,7 +114,7 @@ The `seanum` macro processes an enum definition and:
 
 #### Usage Example:
 ```rust
-use rsmack_seanum;
+use rsmack_seanum::seanum;
 
 #[seanum(rs_type = String, db_type = "Enum")]
 pub enum SwitchAction {

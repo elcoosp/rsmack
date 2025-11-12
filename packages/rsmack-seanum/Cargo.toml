@@ -15,5 +15,8 @@ rsmack-utils = { version = "0.13.0", path = "../rsmack-utils" }
 syn = { version = "2.0.90", features = ["full"] }
 rsmack-megamac = { version = "0.13.0", path = "../rsmack-megamac" }
 const_format = "0.2.33"
+serde = { version = "1", features = ["derive"] }
+fake = { version = "4", features = ["derive"] }
+sea-orm-migration={version = "1.1.0"}
 [lints]
 workspace = true

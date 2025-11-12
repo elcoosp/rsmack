@@ -11,7 +11,7 @@ The `seanum` procedural macro transforms a simple Rust enum into a fully-feature
 Apply the `#[seanum]` attribute to an enum definition with the required parameters:
 
 ```rust
-use rsmack_seanum;
+use rsmack_seanum::seanum;
 
 #[seanum(rs_type = String, db_type = "Enum")]
 pub enum SwitchAction {
@@ -53,7 +53,7 @@ When applied, the macro transforms the input enum by:
 ### Input:
 
 ```rust
-use rsmack_seanum;
+use rsmack_seanum::seanum;
 
 #[seanum(rs_type = String, db_type = "Enum")]
 pub enum SwitchAction {
