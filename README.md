@@ -256,12 +256,12 @@ Add the desired crates to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-rsmack-megamac = "0.7"
-rsmack-seanum = "0.7"
-rsmack-edoc = "0.7"
-rsmack-fs = "0.7"
-rsmack-wrap = "0.7"
-rsmack-utils = "0.7"  # Shared utilities
+rsmack-megamac = "0.14"
+rsmack-seanum = "0.14"
+rsmack-edoc = "0.14"
+rsmack-fs = "0.14"
+rsmack-wrap = "0.14"
+rsmack-utils = "0.14" # Shared utilities
 ```
 
 ## Key Features Across Crates
