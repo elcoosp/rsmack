@@ -62,7 +62,7 @@ pub fn exec(args: Args, item: ItemEnum, _env: ExecEnv) -> TokenStream {
         use serde::{Deserialize, Serialize};
 
         #[derive(
-            Clone, Dummy, Debug, PartialEq, EnumIter, DeriveActiveEnum, Eq, Serialize, Deserialize,
+            Clone, Dummy, Debug, PartialEq, EnumIter, DeriveActiveEnum, Eq, Serialize, Deserialize, Hash
         )]
         #[sea_orm(rs_type = #rs_type, db_type = #db_type, enum_name = #db_enum_name)]
         #visibility enum #enum_name #generics {
