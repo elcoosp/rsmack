@@ -949,7 +949,7 @@ checksum = "7a2d987857b319362043e95f5353c0535c1f58eec5336fdfcf626430af7def58"
 
 [[package]]
 name = "rsmack-edoc"
-version = "0.15.0"
+version = "0.16.0"
 dependencies = [
  "const_format",
  "darling 0.21.3",
@@ -963,7 +963,7 @@ dependencies = [
 
 [[package]]
 name = "rsmack-fs"
-version = "0.15.0"
+version = "0.16.0"
 dependencies = [
  "darling 0.21.3",
  "proc-macro-error2",
@@ -977,7 +977,7 @@ dependencies = [
 
 [[package]]
 name = "rsmack-megamac"
-version = "0.15.0"
+version = "0.16.0"
 dependencies = [
  "bon",
  "darling 0.21.3",
@@ -993,7 +993,7 @@ dependencies = [
 
 [[package]]
 name = "rsmack-seanum"
-version = "0.15.0"
+version = "0.16.0"
 dependencies = [
  "const_format",
  "darling 0.21.3",
@@ -1010,7 +1010,7 @@ dependencies = [
 
 [[package]]
 name = "rsmack-utils"
-version = "0.15.0"
+version = "0.16.0"
 dependencies = [
  "bon",
  "build-print",
@@ -1024,7 +1024,7 @@ dependencies = [
 
 [[package]]
 name = "rsmack-wrap"
-version = "0.15.0"
+version = "0.16.0"
 dependencies = [
  "darling 0.21.3",
  "proc-macro-error2",
