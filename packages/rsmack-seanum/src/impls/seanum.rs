@@ -30,6 +30,16 @@ pub fn exec(args: Args, item: ItemEnum, _env: ExecEnv) -> TokenStream {
         })
         .collect::<String>();
 
+    // Collect existing attributes (excluding the seanum attribute)
+    let existing_attrs: Vec<_> = item
+        .attrs
+        .iter()
+        .filter(|attr| {
+            // Keep attributes that are not the seanum attribute
+            !attr.path().is_ident("seanum")
+        })
+        .collect();
+
     // Generate the string values for each variant
     let variants_with_attrs: Vec<_> = item
         .variants
@@ -38,12 +48,16 @@ pub fn exec(args: Args, item: ItemEnum, _env: ExecEnv) -> TokenStream {
             let variant_name = &variant.ident;
             let variant_name_str = variant_name.to_string();
 
+            // Collect existing variant attributes
+            let existing_variant_attrs = &variant.attrs;
+
             // Create the sea_orm attribute for this variant
             let sea_orm_attr = quote! {
                 #[sea_orm(string_value = #variant_name_str)]
             };
 
             quote! {
+                #(#existing_variant_attrs)*
                 #sea_orm_attr
                 #variant_name
             }
@@ -55,12 +69,14 @@ pub fn exec(args: Args, item: ItemEnum, _env: ExecEnv) -> TokenStream {
     let generics = &item.generics;
     let rs_type = args.rs_type.to_string();
     let db_type = args.db_type;
+
     let result = quote! {
         use fake::Dummy;
         use sea_orm::entity::prelude::*;
         use sea_orm_migration::prelude::*;
         use serde::{Deserialize, Serialize};
 
+        #(#existing_attrs)*
         #[derive(
             Clone, Dummy, Debug, PartialEq, EnumIter, DeriveActiveEnum, Eq, Serialize, Deserialize, Hash
         )]
