@@ -1,6 +1,6 @@
 [package]
 name = "rsmack-fs"
-version = "0.16.0"
+version = "0.17.0"
 edition = "2021"
 description = "Compile-time folder structure mirroring"
 license = "MIT"
@@ -11,8 +11,8 @@ darling = "0.21.0"
 proc-macro-error2 = "2.0.1"
 proc-macro2 = "1.0.92"
 quote = "1.0.37"
-rsmack-utils = { version = "0.16.0", path = "../rsmack-utils" }
-rsmack-megamac = { version = "0.16.0", path = "../rsmack-megamac" }
+rsmack-utils = { version = "0.17.0", path = "../rsmack-utils" }
+rsmack-megamac = { version = "0.17.0", path = "../rsmack-megamac" }
 syn = { version = "2.0.90", features = ["full"] }
 run_script = "0.11"
 [lints]
