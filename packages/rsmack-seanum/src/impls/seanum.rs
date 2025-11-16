@@ -71,14 +71,12 @@ pub fn exec(args: Args, item: ItemEnum, _env: ExecEnv) -> TokenStream {
     let db_type = args.db_type;
 
     let result = quote! {
-        use fake::Dummy;
-        use sea_orm::entity::prelude::*;
-        use sea_orm_migration::prelude::*;
-        use serde::{Deserialize, Serialize};
+
+
 
         #(#existing_attrs)*
         #[derive(
-            Clone, Dummy, Debug, PartialEq, EnumIter, DeriveActiveEnum, Eq, Serialize, Deserialize, Hash
+            Clone, ::fake::Dummy, Debug, PartialEq, ::sea_orm::EnumIter, ::sea_orm::DeriveActiveEnum, Eq, ::serde::Serialize, ::serde::Deserialize, Hash
         )]
         #[sea_orm(rs_type = #rs_type, db_type = #db_type, enum_name = #db_enum_name)]
         #visibility enum #enum_name #generics {
