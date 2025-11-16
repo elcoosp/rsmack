@@ -1,6 +1,6 @@
 [package]
 name = "rsmack-wrap"
-version = "0.17.0"
+version = "0.18.0"
 edition = "2021"
 description = "Struct field type wrapper"
 license = "MIT"
@@ -11,8 +11,8 @@ darling = "0.21.0"
 proc-macro-error2 = "2.0.1"
 proc-macro2 = "1.0.92"
 quote = "1.0.37"
-rsmack-utils = { version = "0.17.0", path = "../rsmack-utils" }
+rsmack-utils = { version = "0.18.0", path = "../rsmack-utils" }
 syn = { version = "2.0.90", features = ["full"] }
-rsmack-megamac = { version = "0.17.0", path = "../rsmack-megamac" }
+rsmack-megamac = { version = "0.18.0", path = "../rsmack-megamac" }
 [lints]
 workspace = true
