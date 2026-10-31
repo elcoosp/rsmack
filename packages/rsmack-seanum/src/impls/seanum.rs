@@ -2,7 +2,6 @@ use darling::FromMeta;
 use proc_macro2::TokenStream;
 use quote::quote;
 use rsmack_utils::megamac::ExecEnv;
-use syn::*;
 
 #[derive(Debug, FromMeta)]
 pub struct Args {
@@ -13,31 +12,20 @@ pub struct Args {
 }
 
 /// Execute seanum macro
-pub fn exec(args: Args, item: ItemEnum, _env: ExecEnv) -> TokenStream {
-    let enum_name = &item.ident;
-    let enum_name_str = enum_name.to_string();
+pub fn exec(args: Args, item: syn::ItemEnum, env: ExecEnv) -> TokenStream {
+    env.finish(run(args, item, &env))
+}
 
-    // Convert enum name to snake_case for database name
-    let db_enum_name = enum_name_str
-        .chars()
-        .enumerate()
-        .map(|(i, c)| {
-            if i > 0 && c.is_uppercase() {
-                format!("_{}", c.to_lowercase().next().unwrap())
-            } else {
-                c.to_lowercase().next().unwrap().to_string()
-            }
-        })
-        .collect::<String>();
+fn run(args: Args, item: syn::ItemEnum, _env: &ExecEnv) -> TokenStream {
+    let enum_name = &item.ident;
+    // Convert enum name to snake_case for the database name
+    let db_enum_name = stringcase::snake_case(&enum_name.to_string());
 
     // Collect existing attributes (excluding the seanum attribute)
     let existing_attrs: Vec<_> = item
         .attrs
         .iter()
-        .filter(|attr| {
-            // Keep attributes that are not the seanum attribute
-            !attr.path().is_ident("seanum")
-        })
+        .filter(|attr| !attr.path().is_ident("seanum"))
         .collect();
 
     // Generate the string values for each variant
@@ -47,11 +35,7 @@ pub fn exec(args: Args, item: ItemEnum, _env: ExecEnv) -> TokenStream {
         .map(|variant| {
             let variant_name = &variant.ident;
             let variant_name_str = variant_name.to_string();
-
-            // Collect existing variant attributes
             let existing_variant_attrs = &variant.attrs;
-
-            // Create the sea_orm attribute for this variant
             let sea_orm_attr = quote! {
                 #[sea_orm(string_value = #variant_name_str)]
             };
@@ -64,16 +48,12 @@ pub fn exec(args: Args, item: ItemEnum, _env: ExecEnv) -> TokenStream {
         })
         .collect();
 
-    // Generate the final enum
     let visibility = &item.vis;
     let generics = &item.generics;
     let rs_type = args.rs_type.to_string();
     let db_type = args.db_type;
 
-    let result = quote! {
-
-
-
+    quote! {
         #(#existing_attrs)*
         #[derive(
             Clone, ::fake::Dummy, Debug, PartialEq, ::sea_orm::EnumIter, ::sea_orm::DeriveActiveEnum, Eq, ::serde::Serialize, ::serde::Deserialize, Hash
@@ -82,7 +62,60 @@ pub fn exec(args: Args, item: ItemEnum, _env: ExecEnv) -> TokenStream {
         #visibility enum #enum_name #generics {
             #(#variants_with_attrs),*
         }
-    };
+    }
+}
 
-    result
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use darling::ast::NestedMeta;
+    use quote::quote;
+
+    fn args_from(tokens: TokenStream) -> Args {
+        let meta_list = NestedMeta::parse_meta_list(tokens).expect("failed to parse meta list");
+        Args::from_list(&meta_list).expect("failed to parse args")
+    }
+
+    fn env() -> ExecEnv {
+        ExecEnv::builder("rsmack_seanum::impls", "impls", "Args", "seanum").build()
+    }
+
+    #[test]
+    fn generates_sea_orm_enum_with_snake_case_name() {
+        let args = args_from(quote! { rs_type = "String", db_type = "String" });
+        let item: syn::ItemEnum = syn::parse_quote! {
+            #[derive(Default)]
+            enum UserStatus {
+                #[default]
+                Active,
+                Suspended,
+            }
+        };
+        let output = exec(args, item, env()).to_string();
+        assert!(output.contains("enum_name = \"user_status\""));
+        assert!(output.contains("rs_type = \"String\""));
+        assert!(output.contains("db_type = \"String\""));
+        assert!(output.contains("# [sea_orm (string_value = \"Active\")]"));
+        assert!(output.contains("# [sea_orm (string_value = \"Suspended\")]"));
+        assert!(output.contains("DeriveActiveEnum"));
+        assert!(!output.contains("seanum"));
+        // existing attributes are preserved
+        assert!(output.contains("derive (Default)"));
+        // the #[default] variant attribute is preserved, followed by the generated attr
+        assert!(output.contains("# [default] # [sea_orm (string_value = \"Active\")] Active"));
+    }
+
+    #[test]
+    fn empty_enum_is_supported() {
+        let args = args_from(quote! { rs_type = "i32", db_type = "Integer" });
+        let item: syn::ItemEnum = syn::parse_quote! {
+            enum Empty {}
+        };
+        let output = exec(args, item, env()).to_string();
+        assert!(output.contains("enum_name = \"empty\""));
+        assert!(output.contains("rs_type = \"i32\""));
+        assert!(output.contains("db_type = \"Integer\""));
+        assert!(output.contains("enum Empty"));
+        assert!(!output.contains("string_value"));
+    }
 }
