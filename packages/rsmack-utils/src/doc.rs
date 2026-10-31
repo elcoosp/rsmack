@@ -3,10 +3,9 @@
 /// `cl` stands for code link
 /// ```
 /// use rsmack_utils::cl;
-/// let result = cl!(proc_macro_error2::abort);
-/// assert_eq!(result, "[`proc_macro_error2::abort`]");
-/// let result_macro = cl!(proc_macro_error2::abort!);
-/// assert_eq!(result_macro, "[`proc_macro_error2::abort!`]");
+/// assert_eq!(cl!(syn::Error), "[`syn::Error`]");
+/// assert_eq!(cl!(syn::Error!), "[`syn::Error!`]");
+/// assert_eq!(cl!(Debug), "Debug");
 /// ```
 #[macro_export]
 macro_rules! cl {
