@@ -1,23 +1,30 @@
 [package]
 name = "rsmack-seanum"
-version = "0.18.0"
-edition = "2021"
-description = "Enhanced documentation macro with constant evaluation"
-license = "MIT"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+description = "SeaORM enum attribute macro with sane defaults"
+
 [lib]
 proc-macro = true
+
 [dependencies]
-darling = "0.21.0"
-proc-macro-error2 = "2.0.1"
-proc-macro2 = "1.0.92"
-quote = "1.0.37"
-rsmack-utils = { version = "0.18.0", path = "../rsmack-utils" }
-syn = { version = "2.0.90", features = ["full"] }
-rsmack-megamac = { version = "0.18.0", path = "../rsmack-megamac" }
-const_format = "0.2.33"
-sea-orm = { version = "1.1.19", features = ["macros"] }
-serde = { version = "1.0.228", features = ["derive"] }
-fake = {version="4.4.0", features = ["derive"]}
-sea-orm-migration = "1.1.19"
+darling.workspace = true
+proc-macro2.workspace = true
+quote.workspace = true
+rsmack-megamac.workspace = true
+rsmack-utils.workspace = true
+sea-orm.workspace = true
+sea-orm-migration.workspace = true
+serde.workspace = true
+stringcase.workspace = true
+syn.workspace = true
+
+[dev-dependencies]
+fake.workspace = true
+serde_json.workspace = true
+
 [lints]
 workspace = true
