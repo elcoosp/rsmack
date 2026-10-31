@@ -1,103 +1,116 @@
-name: Release Crates
+name: Release
 
 on:
   push:
     tags:
-      - "v*.*.*" # Trigger on tags starting with 'v'
+      - "v*.*.*"
 
 env:
-  CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
+  CARGO_TERM_COLOR: always
 
 jobs:
-  release:
-    needs: [test]
-    name: Release Workspace Crates
+  validate:
+    name: Validate before release
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Format check
+        run: cargo fmt --all -- --check
+
+      - name: Clippy (pedantic denied via workspace lints)
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      - name: Tests
+        run: cargo test --workspace
+
+  changelog:
+    name: Generate changelog with git-cliff
+    runs-on: ubuntu-latest
+    needs: [validate]
+    outputs:
+      release_body: ${{ steps.cliff.outputs.content }}
+    steps:
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          # git-cliff needs the tags to compute the changelog
+          fetch-tags: true
 
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
+      - name: Install git-cliff
+        uses: taiki-e/install-action@v2
         with:
-          components: rustfmt, clippy
-      - name: Publish all crates
-        uses: katyo/publish-crates@v2
-        with:
-          # This token is required for publishing
-          registry-token: ${{ secrets.CARGO_REGISTRY_TOKEN }}
-          # Optional: Set to 'true' to do a trial run without publishing
-          dry-run: false
+          tool: git-cliff
 
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          name: Release v${{ steps.tag.outputs.VERSION }}
-          body: |
-            # RSMACK v${{ steps.tag.outputs.VERSION }}
-
-            ## Published Crates
-
-            Automated release of all workspace crates:
-
-            - **megamac** - Procedural macro generator with automatic documentation
-            - **edoc** - Enhanced documentation macro with constant evaluation
-            - **fs** - Compile-time folder structure mirroring
-            - **wrap** - Struct field type wrapper
-            - **utils** - Shared utilities for macro development
-
-            ## Usage
-
-            ```toml
-            [dependencies]
-            rsmack-megamac = "${{ steps.tag.outputs.VERSION }}"
-            rsmack-edoc = "${{ steps.tag.outputs.VERSION }}"
-            rsmack-fs = "${{ steps.tag.outputs.VERSION }}"
-            rsmack-wrap = "${{ steps.tag.outputs.VERSION }}"
-            rsmack-utils = "${{ steps.tag.outputs.VERSION }}"
-            ```
-          draft: false
-          prerelease: false
+      - name: Generate the latest release notes
+        id: cliff
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  test:
-    name: Test and Validate
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt, clippy
-
-      - name: Cache dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-test-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-test-
-
-      - name: Run tests
         run: |
-          cargo test --all-features --workspace
+          git-cliff --latest --strip header --unreleased > release-notes.md
+          cat release-notes.md
+          {
+            echo 'content<<EOF'
+            cat release-notes.md
+            echo EOF
+          } >> "$GITHUB_OUTPUT"
 
-      - name: Check formatting
-        run: cargo fmt -- --check
+      - name: Update the full CHANGELOG.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: git-cliff --output CHANGELOG.md
 
-      - name: Clippy check
-        run: cargo clippy --workspace --all-features -- -D warnings
+      - name: Upload changelog artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: changelog
+          path: |
+            CHANGELOG.md
+            release-notes.md
 
-      - name: Build in release mode
-        run: cargo build --release --workspace
+  publish:
+    name: Publish crates to crates.io
+    runs-on: ubuntu-latest
+    needs: [validate]
+    environment: crates-io
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Publish all workspace crates (order-aware)
+        uses: katyo/publish-crates@v2
+        with:
+          registry-token: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+          dry-run: false
+          ignore-published: true
+          publish-delay: 30000
+
+  github-release:
+    name: Create GitHub release
+    runs-on: ubuntu-latest
+    needs: [changelog, publish]
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Download changelog artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: changelog
+
+      - name: Create the GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Release ${{ github.ref_name }}
+          body: ${{ needs.changelog.outputs.release_body }}
+          draft: false
+          prerelease: false
+          make_latest: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
