@@ -64,7 +64,17 @@ macro_rules! call_attr_proc_macro {
             }
         };
         let parsed_item = syn::parse_macro_input!($item_tok_stream as $item_ty);
-        let parsed_args =
+        // An attribute used without parentheses (`#[my_macro]`) yields an empty stream,
+        // which maps to darling's `from_word` (unit-struct args support it natively).
+        let parsed_args = if meta_list.is_empty() {
+            match crate::$implementations_mod_ident::$exec_fn_mod_ident::$exec_args_ident::from_word()
+            {
+                Ok(v) => v,
+                Err(e) => {
+                    return proc_macro::TokenStream::from(e.write_errors());
+                }
+            }
+        } else {
             match crate::$implementations_mod_ident::$exec_fn_mod_ident::$exec_args_ident::from_list(
                 &meta_list,
             ) {
@@ -72,7 +82,8 @@ macro_rules! call_attr_proc_macro {
                 Err(e) => {
                     return proc_macro::TokenStream::from(e.write_errors());
                 }
-            };
+            }
+        };
         let env = rsmack_utils::build_env!($implementations_mod_ident, $exec_args_ident, $exec_fn_mod_ident);
 
         crate::$implementations_mod_ident::$exec_fn_mod_ident::exec(
@@ -125,7 +136,17 @@ macro_rules! call_func_proc_macro {
                 return proc_macro::TokenStream::from(Error::from(e).write_errors());
             }
         };
-        let parsed_args =
+        // A macro invoked without arguments (`my_macro!()`) yields an empty stream,
+        // which maps to darling's `from_word` (unit-struct args support it natively).
+        let parsed_args = if meta_list.is_empty() {
+            match crate::$implementations_mod_ident::$exec_fn_mod_ident::$exec_args_ident::from_word()
+            {
+                Ok(v) => v,
+                Err(e) => {
+                    return proc_macro::TokenStream::from(e.write_errors());
+                }
+            }
+        } else {
             match crate::$implementations_mod_ident::$exec_fn_mod_ident::$exec_args_ident::from_list(
                 &meta_list,
             ) {
@@ -133,7 +154,8 @@ macro_rules! call_func_proc_macro {
                 Err(e) => {
                     return proc_macro::TokenStream::from(e.write_errors());
                 }
-            };
+            }
+        };
         let env = rsmack_utils::build_env!($implementations_mod_ident, $exec_args_ident, $exec_fn_mod_ident);
 
         crate::$implementations_mod_ident::$exec_fn_mod_ident::exec(
