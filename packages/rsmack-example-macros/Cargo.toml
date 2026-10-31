@@ -1,0 +1,23 @@
+[package]
+name = "rsmack-example-macros"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+description = "Living examples of rsmack-megamac generated macros (not published)"
+publish = false
+
+[lib]
+proc-macro = true
+
+[dependencies]
+darling.workspace = true
+proc-macro2.workspace = true
+quote.workspace = true
+rsmack-megamac.workspace = true
+rsmack-utils.workspace = true
+syn.workspace = true
+
+[lints]
+workspace = true
