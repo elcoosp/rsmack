@@ -10,22 +10,35 @@ pub struct Args {
     with: syn::Ident,
 }
 
+/// Per-field configuration parsed from `#[wrap(...)]` attributes.
+#[derive(Debug, Default, FromMeta)]
+struct FieldArgs {
+    /// Skip the field entirely (`#[wrap(skip)]`)
+    #[darling(default)]
+    skip: bool,
+    /// Per-field wrapper override (`#[wrap(with = "Rc")]`)
+    #[darling(default)]
+    with: Option<syn::Ident>,
+    /// Replace the inner type instead of wrapping it (`#[wrap(with = "Vec", map = "u8")]`
+    /// produces `Vec<u8>` regardless of the field type)
+    #[darling(default)]
+    map: Option<syn::Type>,
+}
+
 /// Execute wrap macro, **before serde derive, otherwise it will error**
-pub fn exec(args: Args, item: syn::ItemStruct, env: ExecEnv) -> TokenStream {
-    match run(args, item, &env) {
-        Ok(output) => env.finish(output),
-        Err(error) => env.finish(error.to_compile_error()),
-    }
+pub fn exec(args: Args, item: syn::ItemStruct, env: &ExecEnv) -> TokenStream {
+    env.finish_result(run(args, item, env))
 }
 
 fn run(args: Args, item: syn::ItemStruct, env: &ExecEnv) -> syn::Result<TokenStream> {
+    let Args { with } = args;
     let mut transformed_item = item;
     transformed_item.fields = match transformed_item.fields {
         syn::Fields::Named(fields_named) => {
             let transformed_fields_named = fields_named
                 .named
                 .into_iter()
-                .map(|f| wrap_field(&args.with, f, env))
+                .map(|f| wrap_field(&with, f, env))
                 .collect();
             syn::Fields::Named(syn::FieldsNamed {
                 brace_token: fields_named.brace_token,
@@ -39,18 +52,44 @@ fn run(args: Args, item: syn::ItemStruct, env: &ExecEnv) -> syn::Result<TokenStr
     })
 }
 
-/// Wrap the inner type of a [`syn::Field`] in a generic arguments call of `wrapper`
+/// Wrap the inner type of a [`syn::Field`] according to its `#[wrap(...)]` config.
 ///
-/// Unsupported field types emit a non-fatal error and are left untouched.
-fn wrap_field(wrapper: &syn::Ident, f: syn::Field, env: &ExecEnv) -> syn::Field {
-    let mut f = f;
-    let ty = f.ty;
-    match &ty {
-        syn::Type::Path(_) | syn::Type::Slice(_) | syn::Type::Tuple(_) | syn::Type::Array(_) => {
-            f.ty = syn::parse2(quote! { #wrapper<#ty> })
-                .expect("wrapper type tokens are always a valid type");
+/// Unsupported field types emit a non-fatal error and are left untouched. The consumed
+/// `#[wrap(...)]` attribute is stripped so the emitted struct stays valid.
+fn wrap_field(default_wrapper: &syn::Ident, mut f: syn::Field, env: &ExecEnv) -> syn::Field {
+    let mut config = FieldArgs::default();
+    f.attrs.retain_mut(|attr| {
+        if !attr.path().is_ident("wrap") {
+            return true;
         }
-        _ => {
+        match FieldArgs::from_meta(&attr.meta) {
+            Ok(parsed) => {
+                config = parsed;
+                false
+            }
+            Err(e) => {
+                env.logr
+                    .emit_error(attr.span(), format!("Failed to parse wrap attribute: {e}"));
+                false
+            }
+        }
+    });
+    let ty = if config.skip {
+        return f;
+    } else {
+        f.ty
+    };
+    let wrapper = config.with.unwrap_or_else(|| default_wrapper.clone());
+    f.ty = match (&config.map, &ty) {
+        // `map` replaces the inner type entirely: `with = "Vec", map = "u8"` -> `Vec<u8>`
+        (Some(inner), _) => syn::parse2(quote! { #wrapper<#inner> })
+            .expect("wrapper type tokens are always a valid type"),
+        (
+            None,
+            syn::Type::Path(_) | syn::Type::Slice(_) | syn::Type::Tuple(_) | syn::Type::Array(_),
+        ) => syn::parse2(quote! { #wrapper<#ty> })
+            .expect("wrapper type tokens are always a valid type"),
+        (None, _) => {
             let kind = format!("{ty:?}")
                 .split(['(', ' '])
                 .next()
@@ -61,9 +100,9 @@ fn wrap_field(wrapper: &syn::Ident, f: syn::Field, env: &ExecEnv) -> syn::Field 
                 ty.span(),
                 format!("Field type not supported `{kind}`, cannot wrap it"),
             );
-            f.ty = ty;
+            ty
         }
-    }
+    };
     f
 }
 
@@ -71,7 +110,6 @@ fn wrap_field(wrapper: &syn::Ident, f: syn::Field, env: &ExecEnv) -> syn::Field 
 mod tests {
     use super::*;
     use darling::ast::NestedMeta;
-    use quote::quote;
 
     fn args_from(tokens: TokenStream) -> Args {
         let meta_list = NestedMeta::parse_meta_list(tokens).expect("failed to parse meta list");
@@ -79,7 +117,7 @@ mod tests {
     }
 
     fn env() -> ExecEnv {
-        ExecEnv::builder("rsmack_wrap::impls", "impls", "Args", "wrap").build()
+        ExecEnv::builder("rsmack_wrap::impls").build()
     }
 
     #[test]
@@ -93,7 +131,7 @@ mod tests {
                 nums: [u8; 2],
             }
         };
-        let output = exec(args, item, env()).to_string();
+        let output = exec(args, item, &env()).to_string();
         assert!(output.contains("name : Option < String >"));
         assert!(output.contains("tags : Option < Vec < String > >"));
         assert!(output.contains("point : Option < (u8 , u8) >"));
@@ -110,7 +148,7 @@ mod tests {
                 reference: &'static str,
             }
         };
-        let output = exec(args, item, env()).to_string();
+        let output = exec(args, item, &env()).to_string();
         assert!(output.contains("name : Box < String >"));
         // the unsupported field is kept as-is, with a compile_error appended
         assert!(output.contains("reference : & 'static str"));
@@ -127,8 +165,104 @@ mod tests {
         let item: syn::ItemStruct = syn::parse_quote! {
             struct Demo(String);
         };
-        let output = exec(args, item, env()).to_string();
+        let output = exec(args, item, &env()).to_string();
         assert!(output.contains("compile_error"));
         assert!(output.contains("Only named struct supported"));
+    }
+
+    #[test]
+    fn skip_attribute_leaves_the_field_untouched() {
+        let args = args_from(quote! { with = "Option" });
+        let item: syn::ItemStruct = syn::parse_quote! {
+            struct User {
+                name: String,
+                #[wrap(skip)]
+                untouched: &'static str,
+            }
+        };
+        let output = exec(args, item, &env()).to_string();
+        assert!(output.contains("name : Option < String >"));
+        assert!(output.contains("untouched : & 'static str"));
+        // the consumed attribute is stripped from the output
+        assert!(!output.contains("wrap (skip)"));
+        assert!(!output.contains("wrap ("));
+        assert!(!output.contains("compile_error"));
+    }
+
+    #[test]
+    fn per_field_with_overrides_the_default_wrapper() {
+        let args = args_from(quote! { with = "Option" });
+        let item: syn::ItemStruct = syn::parse_quote! {
+            struct User {
+                name: String,
+                #[wrap(with = "Box")]
+                boxed: String,
+            }
+        };
+        let output = exec(args, item, &env()).to_string();
+        assert!(output.contains("name : Option < String >"));
+        assert!(output.contains("boxed : Box < String >"));
+        assert!(!output.contains("compile_error"));
+    }
+
+    #[test]
+    fn map_replaces_the_inner_type() {
+        let args = args_from(quote! { with = "Vec" });
+        let item: syn::ItemStruct = syn::parse_quote! {
+            struct Event {
+                #[wrap(with = "Vec", map = "u8")]
+                raw: String,
+                plain: String,
+            }
+        };
+        let output = exec(args, item, &env()).to_string();
+        assert!(output.contains("raw : Vec < u8 >"));
+        assert!(output.contains("plain : Vec < String >"));
+        assert!(!output.contains("compile_error"));
+    }
+
+    #[test]
+    fn broken_wrap_attribute_is_collected_and_stripped() {
+        let args = args_from(quote! { with = "Option" });
+        let item: syn::ItemStruct = syn::parse_quote! {
+            struct User {
+                #[wrap(unknown_arg = 12)]
+                name: String,
+            }
+        };
+        let output = exec(args, item, &env()).to_string();
+        assert!(output.contains("compile_error"));
+        assert!(output.contains("Failed to parse wrap attribute"));
+        assert!(!output.contains("wrap ("));
+    }
+
+    #[test]
+    fn non_wrap_attributes_are_preserved() {
+        let args = args_from(quote! { with = "Option" });
+        let item: syn::ItemStruct = syn::parse_quote! {
+            struct User {
+                #[serde(rename = "n")]
+                name: String,
+            }
+        };
+        let output = exec(args, item, &env()).to_string();
+        assert!(output.contains("serde (rename"));
+        assert!(output.contains("name : Option < String >"));
+        assert!(!output.contains("compile_error"));
+    }
+
+    #[test]
+    fn skip_alone_works_without_wrapper() {
+        // A field only marked `skip` never hits the wrapper code path
+        let args = args_from(quote! { with = "Option" });
+        let item: syn::ItemStruct = syn::parse_quote! {
+            struct Demo {
+                #[wrap(skip)]
+                reference: &'static str,
+            }
+        };
+        let output = exec(args, item, &env()).to_string();
+        assert!(output.contains("reference : & 'static str"));
+        assert!(!output.contains("compile_error"));
     }
 }
