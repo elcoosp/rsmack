@@ -16,7 +16,11 @@ proc-macro2.workspace = true
 quote.workspace = true
 rsmack-megamac.workspace = true
 rsmack-utils.workspace = true
-syn.workspace = true
+syn = { workspace = true, features = ["full"] }
 
 [lints]
 workspace = true
+
+# docs.rs builds with every feature enabled so the docs show the full API.
+[package.metadata.docs.rs]
+all-features = true
