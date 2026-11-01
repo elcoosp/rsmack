@@ -1,0 +1,51 @@
+[package]
+name = "rsmack-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2024"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+darling = "0.24.1"
+proc-macro2 = "1.0.107"
+quote = "1.0.47"
+syn = { version = "3.0.9", features = ["full", "visit"] }
+rsmack-utils = { path = "../packages/rsmack-utils" }
+bon = "3.10.3"
+stringcase = "1.0.0"
+strum = { version = "0.28.0", features = ["derive"] }
+
+# Prevent this from interfering with workspaces
+[workspace]
+members = [""]
+
+[[bin]]
+name = "edoc_consts_source"
+path = "fuzz_targets/edoc_consts_source.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "edoc_args_meta"
+path = "fuzz_targets/edoc_args_meta.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "wrap_args_meta"
+path = "fuzz_targets/wrap_args_meta.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "megamac_args_meta"
+path = "fuzz_targets/megamac_args_meta.rs"
+test = false
+doc = false
+bench = false
