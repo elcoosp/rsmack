@@ -27,13 +27,21 @@ impl Logr {
     }
 
     /// Build a prefixed [`syn::Error`] located at `span`.
+    #[must_use = "the built error is dropped instead of being returned or emitted"]
     pub fn error<M: Display>(&self, span: Span, msg: M) -> syn::Error {
         syn::Error::new(span, self.fmt_msg(msg))
     }
 
     /// Build a prefixed [`syn::Error`] located at the macro call site.
+    #[must_use = "the built error is dropped instead of being returned or emitted"]
     pub fn call_site_error<M: Display>(&self, msg: M) -> syn::Error {
         self.error(Span::call_site(), msg)
+    }
+
+    /// Whether at least one non-fatal error has been collected.
+    #[must_use]
+    pub fn has_errors(&self) -> bool {
+        !self.errors.borrow().is_empty()
     }
 
     /// Collect a spanned error and let the macro expansion continue.
@@ -92,6 +100,16 @@ mod tests {
         assert!(rendered.contains("#[edoc] first"));
         assert!(rendered.contains("#[edoc] second"));
         assert!(rendered.contains("struct Demo ;"));
+    }
+
+    #[test]
+    fn has_errors_tracks_emitted_errors() {
+        let logr = Logr::builder().prefix("edoc").build();
+        assert!(!logr.has_errors());
+        logr.emit_error(Span::call_site(), "oops");
+        assert!(logr.has_errors());
+        let _ = logr.finish(quote! {});
+        assert!(!logr.has_errors());
     }
 
     #[test]
