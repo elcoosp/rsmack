@@ -1,0 +1,27 @@
+[package]
+name = "rsmack-ui-tests"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+description = "trybuild UI tests snapshotting the rustc output of every error path (not published)"
+publish = false
+
+[dependencies]
+fake.workspace = true
+rsmack-edoc.workspace = true
+rsmack-example-macros.workspace = true
+rsmack-fs.workspace = true
+rsmack-megamac.workspace = true
+rsmack-seanum.workspace = true
+rsmack-utils.workspace = true
+rsmack-wrap.workspace = true
+sea-orm.workspace = true
+serde.workspace = true
+
+[dev-dependencies]
+trybuild.workspace = true
+
+[lints]
+workspace = true
