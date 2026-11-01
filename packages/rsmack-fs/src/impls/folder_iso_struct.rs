@@ -6,7 +6,7 @@ use proc_macro2::TokenStream;
 use quote::quote;
 use rsmack_utils::megamac::ExecEnv;
 use syn::spanned::Spanned;
-use syn::*;
+use syn::{ItemStruct, Visibility};
 
 /// Arguments for the `folder_iso_struct` macro
 #[derive(Debug, FromMeta)]
@@ -16,8 +16,17 @@ pub struct Args {
     from_crate: String,
 
     /// Name of the folder to mirror in the struct.
-    /// Should be a flat directory (no subdirectories).
+    /// Should be a flat directory (no subdirectories) unless `recursive = true`.
     folder: String,
+
+    /// Visibility of the generated struct and modules (e.g. `"pub"`, `"pub(crate)"`).
+    #[darling(default)]
+    vis: Option<String>,
+
+    /// Mirror subdirectories as nested modules with their own struct
+    /// (`recursive = true`).
+    #[darling(default)]
+    recursive: bool,
 }
 
 /// Executes the `folder_iso_struct` macro transformation
@@ -27,16 +36,24 @@ pub struct Args {
 /// 1. The original struct definition
 /// 2. An implementation with a `generate()` method that creates the folder structure
 ///    at compile time using `rsmack_utils::fs::folder_iso_struct`
-pub fn exec(args: Args, item: ItemStruct, env: ExecEnv) -> TokenStream {
-    match run(args, item, &env) {
-        Ok(output) => env.finish(output),
-        Err(error) => env.finish(error.to_compile_error()),
-    }
+pub fn exec(args: Args, item: ItemStruct, env: &ExecEnv) -> TokenStream {
+    env.finish_result(run(args, item, env))
 }
 
 fn run(args: Args, item: ItemStruct, env: &ExecEnv) -> syn::Result<TokenStream> {
-    let from_crate = args.from_crate;
-    let folder = args.folder;
+    let Args {
+        from_crate,
+        folder,
+        vis,
+        recursive,
+    } = args;
+    let vis = vis.unwrap_or_else(|| "pub".to_string());
+    let vis_value: Visibility = syn::parse_str(&vis).map_err(|_| {
+        env.logr.call_site_error(format!(
+            "Invalid `vis` value `{vis}`, expected e.g. `pub` or `pub(crate)`"
+        ))
+    })?;
+    let vis_str = quote! { #vis_value }.to_string();
 
     // Ensure we're only working with structs that have named fields
     if !matches!(item.fields, syn::Fields::Named(_)) {
@@ -45,17 +62,24 @@ fn run(args: Args, item: ItemStruct, env: &ExecEnv) -> syn::Result<TokenStream> 
             .error(item.fields.span(), "Only named struct supported"));
     }
 
-    let name = item.ident.clone();
-    let name_str = name.to_string();
+    let syn::ItemStruct {
+        attrs,
+        vis,
+        struct_token,
+        ident,
+        generics,
+        fields,
+        semi_token,
+        ..
+    } = item;
+    let name_str = ident.to_string();
     let folder_str = folder.clone();
-    let attrs = item.attrs.clone();
-    let generics = item.generics.clone();
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
     Ok(quote! {
-        #item
+        #vis #struct_token #ident #generics #fields #semi_token
 
-        impl #impl_generics #name #ty_generics #where_clause {
+        impl #impl_generics #ident #ty_generics #where_clause {
             /// Generates the folder structure at compile time.
             ///
             /// This method is automatically called during the build process to create
@@ -67,6 +91,8 @@ fn run(args: Args, item: ItemStruct, env: &ExecEnv) -> syn::Result<TokenStream> 
                     .name(#name_str)
                     .from_crate(#from_crate)
                     .folder(#folder_str)
+                    .vis(#vis_str)
+                    .recursive(#recursive)
                     .call();
             }
         }
@@ -85,7 +111,7 @@ mod tests {
     }
 
     fn env() -> ExecEnv {
-        ExecEnv::builder("rsmack_fs::impls", "impls", "Args", "folder_iso_struct").build()
+        ExecEnv::builder("rsmack_fs::impls").build()
     }
 
     #[test]
@@ -97,14 +123,47 @@ mod tests {
                 alpha: Alpha,
             }
         };
-        let output = exec(args, item, env()).to_string();
+        let output = exec(args, item, &env()).to_string();
         assert!(output.contains("struct Levels"));
         assert!(output.contains("fn generate ()"));
         assert!(output.contains("rsmack_utils :: fs :: folder_iso_struct ()"));
         assert!(output.contains(". name (\"Levels\")"));
         assert!(output.contains(". from_crate (\"my_crate\")"));
         assert!(output.contains(". folder (\"levels\")"));
+        assert!(output.contains(". vis (\"pub\")"));
+        assert!(output.contains(". recursive (false)"));
         assert!(output.contains(". pre (& quote :: quote ! { # [derive (Debug)] })"));
+    }
+
+    #[test]
+    fn vis_and_recursive_options_are_forwarded() {
+        let args = args_from(quote! {
+            from_crate = "my_crate", folder = "levels", vis = "pub(crate)", recursive = true
+        });
+        let item: ItemStruct = syn::parse_quote! {
+            struct Levels {
+                alpha: Alpha,
+            }
+        };
+        let output = exec(args, item, &env()).to_string();
+        assert!(output.contains(". vis (\"pub (crate)\")"));
+        assert!(output.contains(". recursive (true)"));
+        assert!(!output.contains("compile_error"));
+    }
+
+    #[test]
+    fn invalid_vis_is_a_fatal_error() {
+        let args = args_from(quote! {
+            from_crate = "my_crate", folder = "levels", vis = "not a visibility"
+        });
+        let item: ItemStruct = syn::parse_quote! {
+            struct Levels {
+                alpha: Alpha,
+            }
+        };
+        let output = exec(args, item, &env()).to_string();
+        assert!(output.contains("compile_error"));
+        assert!(output.contains("Invalid `vis` value"));
     }
 
     #[test]
@@ -113,7 +172,7 @@ mod tests {
         let item: ItemStruct = syn::parse_quote! {
             struct Levels(Alpha);
         };
-        let output = exec(args, item, env()).to_string();
+        let output = exec(args, item, &env()).to_string();
         assert!(output.contains("compile_error"));
         assert!(output.contains("Only named struct supported"));
     }
