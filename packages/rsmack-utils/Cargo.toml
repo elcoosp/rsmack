@@ -17,8 +17,17 @@ stringcase.workspace = true
 syn.workspace = true
 
 [dev-dependencies]
+criterion.workspace = true
 schemars.workspace = true
 serde_json.workspace = true
 
 [lints]
 workspace = true
+
+[[bench]]
+name = "expansion"
+harness = false
+
+# docs.rs builds with every feature enabled so the docs show the full API.
+[package.metadata.docs.rs]
+all-features = true
