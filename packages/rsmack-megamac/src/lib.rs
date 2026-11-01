@@ -2,7 +2,15 @@ use proc_macro::TokenStream;
 
 mod impls;
 
-use rsmack_utils::exec::call_func_impls_with_args;
+use proc_macro2::TokenStream as TokenStream2;
+use rsmack_utils::exec::func_entrypoint;
+use rsmack_utils::fs::package_src_folder;
+use rsmack_utils::megamac::ExecEnv;
+
+/// Executes the megamac macro to generate a procedural macro implementation.
+fn exec(args: &impls::megamac::Args, env: &ExecEnv) -> TokenStream2 {
+    env.finish_result(impls::megamac::run(args, env, &package_src_folder()))
+}
 
 /// Declare a mega macro of any kind with automated parameters documentation.
 ///
@@ -13,7 +21,13 @@ use rsmack_utils::exec::call_func_impls_with_args;
 /// # Parameters
 /// * `kind` - The kind of macro to generate, one of `Func`, `Attr` or `Derive`
 /// * `name` - The name of the generated macro
-/// * `receiver` - The `syn` item type received by `Attr` macros (defaults to `ItemStruct`)
+/// * `impls` - Ident of the implementations module (defaults to `impls`)
+/// * `args` - Ident of the args struct (defaults to `Args`)
+/// * `doc` - Documentation source of the generated macro: `readme` embeds the calling
+///   crate's `../README.md`, `inline` (default) only emits the generated parameters docs
+///
+/// The parsed item type of `Attr` and `Derive` macros is inferred from the `exec`
+/// signature of the implementation, so no receiver configuration is needed.
 ///
 /// # Examples
 ///
@@ -40,7 +54,7 @@ use rsmack_utils::exec::call_func_impls_with_args;
 ///     pub who: String,
 /// }
 ///
-/// pub fn exec(args: Args, env: ExecEnv) -> TokenStream {
+/// pub fn exec(args: Args, env: &ExecEnv) -> TokenStream {
 ///     let who = args.who;
 ///     env.finish(quote::quote! {
 ///         pub const GREETING: &str = concat!("Hello ", #who, "!");
@@ -56,7 +70,7 @@ use rsmack_utils::exec::call_func_impls_with_args;
 /// `packages/rsmack-example-macros/src/impls/make_public.rs`):
 ///
 /// ```rust,ignore
-/// megamac!(kind = Attr, name = make_public, receiver = ItemStruct);
+/// megamac!(kind = Attr, name = make_public, doc = readme);
 ///
 /// // #[make_public]
 /// // struct Demo { a: u8 }
@@ -75,5 +89,10 @@ use rsmack_utils::exec::call_func_impls_with_args;
 /// ```
 #[proc_macro]
 pub fn megamac(args: TokenStream) -> TokenStream {
-    call_func_impls_with_args!(megamac, args)
+    func_entrypoint(
+        args.into(),
+        concat!(std::module_path!(), "::megamac"),
+        |args, env| exec(&args, env),
+    )
+    .into()
 }
