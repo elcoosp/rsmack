@@ -1,0 +1,11 @@
+error: #[rsmack_megamac::megamac] Unsupported MacroKind `Nope`, expected `Attr`, `Func` or `Derive`
+ --> tests/ui/megamac_bad_kind.rs:3:17
+  |
+3 | megamac!(kind = Nope, name = demo);
+  |                 ^^^^
+
+error[E0601]: `main` function not found in crate `$CRATE`
+ --> tests/ui/megamac_bad_kind.rs:3:36
+  |
+3 | megamac!(kind = Nope, name = demo);
+  |                                    ^ consider adding a `main` function to `$DIR/tests/ui/megamac_bad_kind.rs`
