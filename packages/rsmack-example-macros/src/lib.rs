@@ -13,6 +13,6 @@ use rsmack_megamac::megamac;
 
 megamac!(kind = Func, name = greeting);
 
-megamac!(kind = Attr, name = make_public, receiver = ItemStruct);
+megamac!(kind = Attr, name = make_public);
 
 megamac!(kind = Derive, name = type_name);
