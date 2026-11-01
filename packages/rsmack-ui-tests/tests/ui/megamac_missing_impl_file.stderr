@@ -1,0 +1,13 @@
+error: #[rsmack_megamac::megamac] Failed to get macro_impl_src of does_not_exist at $WORKSPACE/target/tests/trybuild/rsmack-ui-tests/src/impls/does_not_exist.rs: No such file or directory (os error 2)
+ --> tests/ui/megamac_missing_impl_file.rs:3:1
+  |
+3 | megamac!(kind = Func, name = does_not_exist);
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: this error originates in the macro `megamac` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0601]: `main` function not found in crate `$CRATE`
+ --> tests/ui/megamac_missing_impl_file.rs:3:46
+  |
+3 | megamac!(kind = Func, name = does_not_exist);
+  |                                              ^ consider adding a `main` function to `$DIR/tests/ui/megamac_missing_impl_file.rs`
