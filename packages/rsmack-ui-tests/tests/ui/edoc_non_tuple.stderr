@@ -1,0 +1,11 @@
+error: #[rsmack_edoc::edoc] Only Tuple supported, maybe you are missing a second element
+ --> tests/ui/edoc_non_tuple.rs:5:5
+  |
+5 |     #[edoc("not a tuple")]
+  |     ^
+
+error[E0601]: `main` function not found in crate `$CRATE`
+ --> tests/ui/edoc_non_tuple.rs:7:2
+  |
+7 | }
+  |  ^ consider adding a `main` function to `$DIR/tests/ui/edoc_non_tuple.rs`
