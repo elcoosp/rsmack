@@ -1,0 +1,11 @@
+error: #[rsmack_edoc::edoc] Unresolved const ident `NOPE`
+ --> tests/ui/edoc_unresolved_const.rs:5:41
+  |
+5 |     #[edoc(("App: ", APP, " missing: ", NOPE))]
+  |                                         ^^^^
+
+error[E0601]: `main` function not found in crate `$CRATE`
+ --> tests/ui/edoc_unresolved_const.rs:7:2
+  |
+7 | }
+  |  ^ consider adding a `main` function to `$DIR/tests/ui/edoc_unresolved_const.rs`
