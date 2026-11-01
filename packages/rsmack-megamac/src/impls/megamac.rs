@@ -8,10 +8,12 @@
 use bon::Builder;
 use darling::FromMeta;
 use proc_macro2::TokenStream;
-use quote::*;
-use rsmack_utils::{fs::package_src_folder, megamac::ExecEnv};
+use quote::{ToTokens, quote};
+use rsmack_utils::megamac::ExecEnv;
+use std::path::{Path, PathBuf};
 use strum::Display;
-use syn::*;
+use syn::spanned::Spanned;
+use syn::{Expr, ExprLit, Ident, Item, ItemStruct, Lit, Meta, MetaNameValue, Type};
 
 /// Represents the kind of procedural macro to generate.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Display)]
@@ -24,18 +26,14 @@ enum MacroKind {
     Derive,
 }
 
-/// Arguments for configuring the megamac macro generation.
-#[derive(Debug, FromMeta)]
-pub struct Args {
-    /// The type of procedural macro to generate as [`Ident`]
-    kind: Ident,
-
-    /// Name of the macro to generate as [`Ident`]
-    name: Ident,
-
-    /// The receiver type for attribute macros (only used with [`MacroKind::Attr`])
-    #[darling(default)]
-    receiver: Option<Ident>,
+/// Source of the generated macro documentation.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Display, Default)]
+enum DocSource {
+    /// `#[doc = include_str!("../README.md")]`: the calling crate must ship a README.
+    Readme,
+    /// Only the generated `# Parameters` docs, no README dependency.
+    #[default]
+    Inline,
 }
 
 impl MacroKind {
@@ -56,26 +54,80 @@ impl MacroKind {
     }
 }
 
-/// Executes the megamac macro to generate a procedural macro implementation.
-///
-/// # Parameters
-/// - `args`: Configuration arguments for the macro
-/// - `env`: Execution environment containing context and utilities
-///
-/// # Returns
-/// A [`TokenStream`] containing the generated procedural macro implementation.
-pub fn exec(args: Args, env: ExecEnv) -> TokenStream {
-    match run(&args, &env) {
-        Ok(output) => env.finish(output),
-        Err(error) => env.finish(error.to_compile_error()),
+impl DocSource {
+    /// Converts an [`Ident`] to a [`DocSource`].
+    ///
+    /// # Errors
+    /// Returns an error if the identifier doesn't match `readme` or `inline`.
+    fn from_ident(value: &Ident) -> syn::Result<Self> {
+        match value.to_string().as_str() {
+            "readme" => Ok(Self::Readme),
+            "inline" => Ok(Self::Inline),
+            _ => Err(syn::Error::new(
+                value.span(),
+                format!("Unsupported doc source `{value}`, expected `readme` or `inline`"),
+            )),
+        }
     }
 }
 
-fn run(args: &Args, env: &ExecEnv) -> syn::Result<TokenStream> {
-    let kind = MacroKind::from_ident(&args.kind)?;
+/// Arguments for configuring the megamac macro generation.
+#[derive(Debug, FromMeta)]
+pub struct Args {
+    /// The type of procedural macro to generate as [`Ident`]
+    pub(crate) kind: Ident,
+
+    /// Name of the macro to generate as [`Ident`]
+    pub(crate) name: Ident,
+
+    /// Ident of the implementations module, `impls` by default
+    #[darling(default)]
+    pub(crate) impls: Option<Ident>,
+
+    /// Ident of the args struct, `Args` by default
+    #[darling(default, rename = "args")]
+    pub(crate) arguments: Option<Ident>,
+
+    /// Documentation source of the generated macro, `inline` by default
+    #[darling(default)]
+    pub(crate) doc: Option<Ident>,
+}
+
+impl Args {
+    /// Ident of the args struct, defaulting to `Args`.
+    fn args_ident(&self) -> Ident {
+        self.arguments
+            .clone()
+            .unwrap_or_else(|| Ident::new("Args", self.name.span()))
+    }
+
+    /// Ident of the implementations module, defaulting to `impls`.
+    fn impls_ident(&self) -> Ident {
+        self.impls
+            .clone()
+            .unwrap_or_else(|| Ident::new("impls", self.name.span()))
+    }
+
+    /// Resolved documentation source, defaulting to [`DocSource::Inline`].
+    ///
+    /// # Errors
+    /// Returns an error for unknown `doc` values.
+    fn doc_source(&self) -> syn::Result<DocSource> {
+        self.doc
+            .as_ref()
+            .map(DocSource::from_ident)
+            .transpose()
+            .map(Option::unwrap_or_default)
+    }
+}
+
+pub(crate) fn run(args: &Args, env: &ExecEnv, src_folder: &Path) -> syn::Result<TokenStream> {
+    let kind = MacroKind::from_ident(&args.kind).map_err(|e| env.logr.error(e.span(), e))?;
+    let doc_source = args.doc_source().map_err(|e| env.logr.error(e.span(), e))?;
+    let impls_ident = args.impls_ident();
     let name = &args.name;
-    let macro_impl_file_ast = macro_impl_file_ast(args, env)?;
-    let fields_doc = args_fields_doc(&macro_impl_file_ast, env)?;
+    let macro_impl_file_ast = macro_impl_file_ast(args, env, src_folder, &impls_ident)?;
+    let fields_doc = args_fields_doc(&macro_impl_file_ast, env, &args.args_ident(), &impls_ident)?;
 
     // Format field documentation for inclusion in the generated macro docs
     let formatted_fields_doc = fields_doc
@@ -96,42 +148,62 @@ fn run(args: &Args, env: &ExecEnv) -> syn::Result<TokenStream> {
     let kind_str = kind.to_string();
 
     // Generate the main documentation for the macro
+    let readme_doc = match doc_source {
+        DocSource::Readme => quote! { #[doc = include_str!("../README.md")] },
+        DocSource::Inline => quote! {},
+    };
     let doc = quote! {
-        #[doc = include_str!("../README.md")]
+        #readme_doc
         #[doc = concat!(#name_str, " procedural macro (", #kind_str, ").")]
         #[doc = "# Parameters"]
         #(#formatted_fields_doc)*
     };
 
-    // Generate the appropriate macro implementation based on the kind
+    // The implementation entrypoint routes through the shared rsmack-utils drivers:
+    // darling meta parsing, item parsing and diagnostics flushing are single-sourced.
+    let exec_path = quote! { crate::#impls_ident::#name::exec };
     let macro_impl = match kind {
         MacroKind::Derive => {
             let derive_name = Ident::new(&stringcase::pascal_case(&name_str), name.span());
             quote! {
                 #[proc_macro_derive(#derive_name, attributes(#name))]
                 pub fn #name(item: proc_macro::TokenStream) -> proc_macro::TokenStream {
-                    rsmack_utils::exec::call_derive_impls_with_args!(#name, item)
+                    rsmack_utils::exec::derive_entrypoint(
+                        item.into(),
+                        concat!(std::module_path!(), "::", #name_str),
+                        |__item, __env| #exec_path(__item, __env),
+                    )
+                    .into()
                 }
             }
         }
         MacroKind::Func => quote! {
             #[proc_macro]
             pub fn #name(args: proc_macro::TokenStream) -> proc_macro::TokenStream {
-                rsmack_utils::exec::call_func_impls_with_args!(#name, args)
+                rsmack_utils::exec::func_entrypoint(
+                    args.into(),
+                    concat!(std::module_path!(), "::", #name_str),
+                    |__args, __env| #exec_path(__args, __env),
+                )
+                .into()
             }
         },
         MacroKind::Attr => {
-            let receiver = args
-                .receiver
-                .clone()
-                .unwrap_or_else(|| Ident::new("ItemStruct", name.span()));
+            // The parsed item type is inferred from the `exec` signature of the
+            // implementation: no receiver configuration is needed anymore.
             quote! {
                 #[proc_macro_attribute]
                 pub fn #name(
                     attr: proc_macro::TokenStream,
                     item: proc_macro::TokenStream,
                 ) -> proc_macro::TokenStream {
-                    rsmack_utils::exec::call_attr_impls_with_args!(#name, syn::#receiver, attr, item)
+                    rsmack_utils::exec::attr_entrypoint(
+                        attr.into(),
+                        item.into(),
+                        concat!(std::module_path!(), "::", #name_str),
+                        |__args, __item, __env| #exec_path(__args, __item, __env),
+                    )
+                    .into()
                 }
             }
         }
@@ -147,10 +219,13 @@ fn run(args: &Args, env: &ExecEnv) -> syn::Result<TokenStream> {
 ///
 /// # Errors
 /// Returns a prefixed [`syn::Error`] if the file cannot be read or parsed.
-fn macro_impl_file_ast(args: &Args, env: &ExecEnv) -> syn::Result<syn::File> {
-    let macro_impl_file_path = package_src_folder()
-        .join(&env.implementations_mod_ident)
-        .join(format!("{}.rs", args.name));
+fn macro_impl_file_ast(
+    args: &Args,
+    env: &ExecEnv,
+    src_folder: &Path,
+    impls_ident: &Ident,
+) -> syn::Result<syn::File> {
+    let macro_impl_file_path = impl_file_path(src_folder, impls_ident, &args.name);
     let macro_impl_src = std::fs::read_to_string(&macro_impl_file_path).map_err(|e| {
         env.logr.call_site_error(format!(
             "Failed to get macro_impl_src of {} at {}: {e}",
@@ -167,6 +242,14 @@ fn macro_impl_file_ast(args: &Args, env: &ExecEnv) -> syn::Result<syn::File> {
     })
 }
 
+/// Path of the implementation module of `name`: `<src_folder>/<impls>/<name>.rs`.
+#[must_use]
+fn impl_file_path(src_folder: &Path, impls_ident: &Ident, name: &Ident) -> PathBuf {
+    src_folder
+        .join(impls_ident.to_string())
+        .join(format!("{name}.rs"))
+}
+
 /// Documentation information for a field in the macro arguments struct.
 #[derive(Debug, Builder)]
 struct FieldDoc {
@@ -180,26 +263,48 @@ struct FieldDoc {
 
 /// Extracts documentation for all fields in the macro arguments struct.
 ///
+/// Documentation problems of the fields are **collected** (non-fatal), so several
+/// documentation issues are reported in one shot instead of failing on the first.
+///
 /// # Errors
-/// Returns a prefixed [`syn::Error`] if the arguments struct cannot be found.
-fn args_fields_doc(macro_impl_file_ast: &syn::File, env: &ExecEnv) -> syn::Result<Vec<FieldDoc>> {
+/// Returns a prefixed [`syn::Error`] if the args struct cannot be found.
+fn args_fields_doc(
+    macro_impl_file_ast: &syn::File,
+    env: &ExecEnv,
+    args_ident: &Ident,
+    impls_ident: &Ident,
+) -> syn::Result<Vec<FieldDoc>> {
     let Some(args_struct) = macro_impl_file_ast
         .items
         .iter()
         .find_map(|item| match item {
-            Item::Struct(ItemStruct { ident, fields, .. }) if *ident == env.exec_args_ident => {
-                Some(fields)
-            }
+            Item::Struct(ItemStruct { ident, fields, .. }) if *ident == *args_ident => Some(fields),
             _ => None,
         })
     else {
         return Err(env.logr.call_site_error(format!(
-            "Failed to find `{}` struct in `{}`",
-            env.exec_args_ident, env.exec_fn_mod_ident
+            "Failed to find `{args_ident}` struct in `{impls_ident}`"
         )));
     };
 
-    Ok(args_struct
+    let fields_named = match args_struct {
+        syn::Fields::Named(fields_named) => fields_named,
+        // A unit `Args` struct is legitimate: the macro takes no parameters.
+        syn::Fields::Unit => return Ok(vec![]),
+        syn::Fields::Unnamed(_) => {
+            env.logr.emit_error(
+                args_struct.span(),
+                format!(
+                    "Unsupported `{args_ident}` struct: only named fields are documented, received `{}`",
+                    args_struct.to_token_stream()
+                ),
+            );
+            return Ok(vec![]);
+        }
+    };
+
+    Ok(fields_named
+        .named
         .iter()
         .map(|f| {
             let doc = f.attrs.iter().find_map(|a| match &a.meta {
@@ -229,7 +334,6 @@ fn args_fields_doc(macro_impl_file_ast: &syn::File, env: &ExecEnv) -> syn::Resul
 mod tests {
     use super::*;
     use darling::ast::NestedMeta;
-    use quote::quote;
 
     fn args_from(tokens: TokenStream) -> Args {
         let meta_list = NestedMeta::parse_meta_list(tokens).expect("failed to parse meta list");
@@ -256,18 +360,26 @@ mod tests {
     }
 
     fn test_env() -> ExecEnv {
-        ExecEnv::builder(env!("CARGO_MANIFEST_DIR"), "impls", "Args", "megamac").build()
+        ExecEnv::builder("rsmack_megamac::megamac").build()
+    }
+
+    /// Local exec helper mirroring the lib entrypoint (`exec` lives in `lib.rs` so the
+    /// playground bin can include this module without dead code).
+    fn exec(args: &Args, env: &ExecEnv) -> TokenStream {
+        let src_folder = rsmack_utils::fs::package_src_folder();
+        env.finish_result(run(args, env, &src_folder))
     }
 
     /// Run `exec` with `CARGO_MANIFEST_DIR` pointing at this crate (guard + env + exec
     /// are serialized so parallel tests cannot race on the environment).
-    fn exec_default(args: Args) -> String {
+    fn exec_default(args: &Args) -> String {
         let _guard = with_manifest_dir(std::path::Path::new(env!("CARGO_MANIFEST_DIR")));
-        exec(args, test_env()).to_string()
+        exec(args, &test_env()).to_string()
     }
 
     /// Cover the exec error paths with controlled `impls` files: broken rust source,
-    /// missing `Args` struct, and a mix of documented/undocumented fields.
+    /// missing `Args` struct, tuple `Args` struct, and a mix of documented/undocumented
+    /// fields.
     #[test]
     fn exec_handles_broken_and_argsless_impl_files() {
         let root = std::env::temp_dir().join("rsmack-megamac-error-paths");
@@ -284,9 +396,20 @@ mod tests {
         )
         .expect("write argsless impl file");
         std::fs::write(
+            root.join("src").join("impls").join("tupleargs.rs"),
+            "pub struct Args(pub String);",
+        )
+        .expect("write tuple args impl file");
+        std::fs::write(
+            root.join("src").join("impls").join("unitargs.rs"),
+            "pub struct Args;",
+        )
+        .expect("write unit args impl file");
+        std::fs::write(
             root.join("src").join("impls").join("mixed.rs"),
             r"
-            use darling::FromMeta;
+            use bon::Builder;
+use darling::FromMeta;
 
             /// Mixed args
             #[derive(Debug, FromMeta)]
@@ -308,19 +431,32 @@ mod tests {
 
         // Readable but unparsable impl file (guard held: use `exec` directly)
         let args = args_from(quote! { kind = "Func", name = "broken" });
-        let output = exec(args, test_env()).to_string();
+        let output = exec(&args, &test_env()).to_string();
         assert!(output.contains("compile_error"));
         assert!(output.contains("Failed to parse macro_impl_src"));
 
         // Valid rust file without any `Args` struct
         let args = args_from(quote! { kind = "Func", name = "noargs" });
-        let output = exec(args, test_env()).to_string();
+        let output = exec(&args, &test_env()).to_string();
         assert!(output.contains("compile_error"));
         assert!(output.contains("Failed to find `Args` struct"));
 
+        // Tuple `Args` struct: collected error, no panic, empty parameters section
+        let args = args_from(quote! { kind = "Func", name = "tupleargs" });
+        let output = exec(&args, &test_env()).to_string();
+        assert!(output.contains("compile_error"));
+        assert!(output.contains("Unsupported `Args` struct"));
+
+        // Unit `Args` struct: legitimate, zero documented parameters
+        let args = args_from(quote! { kind = "Func", name = "unitargs" });
+        let output = exec(&args, &test_env()).to_string();
+        assert!(output.contains("# [proc_macro]"));
+        assert!(!output.contains("compile_error"));
+        assert!(!output.contains("Not documented"));
+
         // Documented, undocumented and non-doc attribute fields are all handled
         let args = args_from(quote! { kind = "Func", name = "mixed" });
-        let output = exec(args, test_env()).to_string();
+        let output = exec(&args, &test_env()).to_string();
         assert!(output.contains("* `documented` - "));
         assert!(output.contains("Documented field"));
         assert!(output.contains("* `undocumented` - Not documented"));
@@ -350,14 +486,40 @@ mod tests {
     }
 
     #[test]
+    fn doc_source_maps_every_value() {
+        for (ident, expected) in [
+            (syn::parse_quote!(readme), DocSource::Readme),
+            (syn::parse_quote!(inline), DocSource::Inline),
+        ] {
+            assert_eq!(DocSource::from_ident(&ident).ok(), Some(expected));
+        }
+        let bad: Ident = syn::parse_quote!(nope);
+        let err = DocSource::from_ident(&bad).expect_err("should fail");
+        assert!(err.to_string().contains("Unsupported doc source `nope`"));
+    }
+
+    #[test]
     fn args_parse_minimal_and_full() {
         let minimal = args_from(quote! { kind = "Func", name = "demo" });
         assert_eq!(minimal.kind, "Func");
         assert_eq!(minimal.name, "demo");
-        assert!(minimal.receiver.is_none());
+        assert!(minimal.impls.is_none());
+        assert!(minimal.arguments.is_none());
+        assert!(minimal.doc.is_none());
+        assert_eq!(minimal.impls_ident(), "impls");
+        assert_eq!(minimal.args_ident(), "Args");
+        assert_eq!(minimal.doc_source().expect("doc source"), DocSource::Inline);
 
-        let full = args_from(quote! { kind = "Attr", name = "demo", receiver = "ItemStruct" });
-        assert_eq!(full.receiver.expect("receiver set"), "ItemStruct");
+        let full = args_from(quote! {
+            kind = "Attr",
+            name = "demo",
+            impls = "attributes",
+            args = "DemoArgs",
+            doc = "readme"
+        });
+        assert_eq!(full.impls_ident(), "attributes");
+        assert_eq!(full.args_ident(), "DemoArgs");
+        assert_eq!(full.doc_source().expect("doc source"), DocSource::Readme);
     }
 
     #[test]
@@ -367,53 +529,90 @@ mod tests {
     }
 
     #[test]
+    fn impl_file_path_joins_impls_and_name() {
+        let impls: Ident = syn::parse_quote!(attributes);
+        let name: Ident = syn::parse_quote!(demo);
+        assert_eq!(
+            impl_file_path(Path::new("/crate/src"), &impls, &name),
+            PathBuf::from("/crate/src/attributes/demo.rs")
+        );
+    }
+
+    #[test]
     fn exec_func_generates_entrypoint_and_documented_parameters() {
         let args = args_from(quote! { kind = "Func", name = "megamac" });
-        let output = exec_default(args);
+        let output = exec_default(&args);
         assert!(output.contains("# [proc_macro]"));
         assert!(output.contains("pub fn megamac"));
-        assert!(output.contains("call_func_impls_with_args ! (megamac , args)"));
+        assert!(output.contains("func_entrypoint"));
+        assert!(output.contains("crate :: impls :: megamac :: exec"));
         assert!(output.contains("# Parameters"));
         assert!(output.contains("* `kind`"));
         assert!(output.contains("* `name`"));
+        // Default doc source is inline: no README dependency
+        assert!(!output.contains("include_str"));
     }
 
     #[test]
-    fn exec_attr_uses_receiver_type() {
-        let args = args_from(quote! { kind = "Attr", name = "megamac", receiver = "ItemEnum" });
-        let output = exec_default(args);
-        assert!(output.contains("# [proc_macro_attribute]"));
-        assert!(output.contains("syn :: ItemEnum"));
+    fn exec_readme_doc_embeds_the_readme() {
+        let args = args_from(quote! { kind = "Func", name = "megamac", doc = "readme" });
+        let output = exec_default(&args);
+        assert!(output.contains("include_str ! (\"../README.md\")"));
     }
 
     #[test]
-    fn exec_attr_defaults_to_item_struct_receiver() {
+    fn exec_custom_impls_and_args_idents_are_honored() {
+        let args = args_from(
+            quote! { kind = "Func", name = "megamac", impls = "attributes", args = "MegamacArgs" },
+        );
+        let _guard = with_manifest_dir(std::path::Path::new(env!("CARGO_MANIFEST_DIR")));
+        // The impl file `attributes/megamac.rs` does not exist: the error message proves
+        // the custom impls ident was used for the lookup.
+        let output = exec(&args, &test_env()).to_string();
+        assert!(output.contains("Failed to get macro_impl_src of megamac"));
+        assert!(output.contains("attributes"));
+    }
+
+    #[test]
+    fn exec_attr_generates_entrypoint_with_inferred_receiver() {
         let args = args_from(quote! { kind = "Attr", name = "megamac" });
-        let output = exec_default(args);
-        assert!(output.contains("syn :: ItemStruct"));
+        let output = exec_default(&args);
+        assert!(output.contains("# [proc_macro_attribute]"));
+        assert!(output.contains("attr_entrypoint"));
+        assert!(output.contains("__item"));
+        // The receiver type is inferred from the `exec` signature of the impl
+        assert!(!output.contains("syn ::"));
     }
 
     #[test]
     fn exec_derive_pascal_cases_the_name() {
         let args = args_from(quote! { kind = "Derive", name = "megamac" });
-        let output = exec_default(args);
+        let output = exec_default(&args);
         assert!(output.contains("proc_macro_derive"));
         assert!(output.contains("Megamac"));
-        assert!(output.contains("call_derive_impls_with_args"));
+        assert!(output.contains("derive_entrypoint"));
     }
 
     #[test]
     fn exec_reports_unsupported_kind() {
         let args = args_from(quote! { kind = "Nope", name = "megamac" });
-        let output = exec_default(args);
+        let output = exec_default(&args);
         assert!(output.contains("compile_error"));
         assert!(output.contains("Unsupported MacroKind"));
     }
 
     #[test]
+    fn exec_reports_unsupported_doc_source() {
+        let args = args_from(quote! { kind = "Func", name = "megamac", doc = "nope" });
+        let output = exec_default(&args);
+        assert!(output.contains("compile_error"));
+        assert!(output.contains("Unsupported doc source `nope`"));
+    }
+
+    #[test]
     fn exec_reports_missing_impl_file() {
         let args = args_from(quote! { kind = "Func", name = "does_not_exist" });
-        let output = exec_default(args);
+        let output = exec_default(&args);
         assert!(output.contains("compile_error"));
         assert!(output.contains("Failed to get macro_impl_src"));
     }
