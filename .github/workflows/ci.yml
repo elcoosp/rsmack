@@ -27,7 +27,7 @@ jobs:
       - name: Check formatting
         run: cargo fmt --all -- --check
 
-      - name: Clippy (pedantic denied via workspace lints)
+      - name: Clippy (pedantic denied via workspace lints, zero allows)
         run: cargo clippy --workspace --all-targets -- -D warnings
 
   test:
@@ -43,6 +43,41 @@ jobs:
 
       - name: Build docs
         run: cargo doc --workspace --no-deps
+
+  ui:
+    name: UI tests (trybuild)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Snapshot every error path with trybuild
+        run: cargo test -p rsmack-ui-tests
+
+  msrv:
+    name: MSRV (${{ vars.MSRV || '1.94' }})
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: "1.94"
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-hack
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Check every feature combination with the declared MSRV
+        run: cargo hack check --workspace --each-feature --rust-version
+
+  semver:
+    name: Semver checks
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v5
+      - uses: obi1kenobi/cargo-semver-checks-action@v2
 
   coverage:
     name: Coverage (100% lines)
@@ -60,10 +95,10 @@ jobs:
           tool: cargo-llvm-cov
 
       - name: Enforce 100% line coverage
-        run: cargo llvm-cov --workspace --all-targets --fail-under-lines 100
+        run: cargo llvm-cov --workspace --lib --bins --tests --ignore-filename-regex 'fuzz' --fail-under-lines 100
 
       - name: Generate lcov report
-        run: cargo llvm-cov --workspace --all-targets --lcov --output-path lcov.info
+        run: cargo llvm-cov --workspace --all-targets --ignore-filename-regex 'benches|fuzz' --lcov --output-path lcov.info
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
