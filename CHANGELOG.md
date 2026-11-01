@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-## [Unreleased]
+## [0.20.0] - 2026-11-01
 
 ### Features
 
@@ -12,20 +12,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add rsmack-example-macros and reach 100% test coverage
 
+- [**breaking**] Single-source the proc-macro entrypoint drivers
+
+- Edoc const-expression evaluation, memoized consts and multi-error reporting
+
+- Wrap field attributes, seanum customizations and recursive folder mirroring
+
+- Megamac playground, custom impls/args idents and inline docs
+
+- Fuzz the parsers with cargo-fuzz
+
 
 ### Documentation
 
 - Remake README with logo, refresh crate docs and add improvements roadmap
+
+- Refresh README, add error style guide and update the roadmap
 
 
 ### Testing
 
 - Appease pedantic lints in test files
 
+- Snapshot every error path with trybuild
+
 
 ### Miscellaneous Tasks
 
 - Add CI matrix, git-cliff changelog and tag driven release
+
+- Semver checks, MSRV job and UI tests; fix branch filter
+
+- Bump workspace version to 0.20.0
+
+
+### Bench
+
+- Criterion expansion benchmarks for every macro
 
 ## [0.18.0] - 2025-11-16
 
