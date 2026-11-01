@@ -1,0 +1,11 @@
+error: #[rsmack_edoc::edoc] Unsupported const macro `vec!`
+ --> tests/ui/edoc_unsupported_element.rs:5:27
+  |
+5 |     #[edoc(("App: ", APP, vec![1]))]
+  |                           ^^^
+
+error[E0601]: `main` function not found in crate `$CRATE`
+ --> tests/ui/edoc_unsupported_element.rs:7:2
+  |
+7 | }
+  |  ^ consider adding a `main` function to `$DIR/tests/ui/edoc_unsupported_element.rs`
