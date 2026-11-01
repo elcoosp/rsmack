@@ -1,0 +1,11 @@
+error: #[rsmack_wrap::wrap] Only named struct supported
+ --> tests/ui/wrap_tuple_struct.rs:4:12
+  |
+4 | struct Demo(String);
+  |            ^^^^^^^^
+
+error[E0601]: `main` function not found in crate `$CRATE`
+ --> tests/ui/wrap_tuple_struct.rs:4:21
+  |
+4 | struct Demo(String);
+  |                     ^ consider adding a `main` function to `$DIR/tests/ui/wrap_tuple_struct.rs`
