@@ -17,14 +17,23 @@ quote.workspace = true
 rsmack-megamac.workspace = true
 rsmack-utils.workspace = true
 sea-orm.workspace = true
-sea-orm-migration.workspace = true
 serde.workspace = true
 stringcase.workspace = true
-syn.workspace = true
+syn = { workspace = true, features = ["full"] }
 
 [dev-dependencies]
+criterion.workspace = true
 fake.workspace = true
+sea-orm-migration.workspace = true
 serde_json.workspace = true
 
 [lints]
 workspace = true
+
+[[bench]]
+name = "expansion"
+harness = false
+
+# docs.rs builds with every feature enabled so the docs show the full API.
+[package.metadata.docs.rs]
+all-features = true
