@@ -11,7 +11,7 @@ pub struct Args {
     pub who: String,
 }
 
-pub fn exec(args: Args, env: ExecEnv) -> TokenStream {
+pub fn exec(args: Args, env: &ExecEnv) -> TokenStream {
     let who = args.who;
     env.finish(quote::quote! {
         pub const GREETING: &str = concat!("Hello ", #who, "!");
