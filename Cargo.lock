@@ -1992,8 +1992,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d6f6ff9a378485b298a5286656da665ba74413d36db0979633275d2e708145d4"
 
 [[package]]
+name = "rsmack"
+version = "1.0.0"
+dependencies = [
+ "rsmack-edoc",
+ "rsmack-fs",
+ "rsmack-megamac",
+ "rsmack-seanum",
+ "rsmack-wrap",
+]
+
+[[package]]
 name = "rsmack-edoc"
-version = "0.20.0"
+version = "1.0.0"
 dependencies = [
  "criterion",
  "darling 0.24.1",
@@ -2006,7 +2017,7 @@ dependencies = [
 
 [[package]]
 name = "rsmack-example-macros"
-version = "0.20.0"
+version = "1.0.0"
 dependencies = [
  "darling 0.24.1",
  "proc-macro2",
@@ -2018,7 +2029,7 @@ dependencies = [
 
 [[package]]
 name = "rsmack-fs"
-version = "0.20.0"
+version = "1.0.0"
 dependencies = [
  "darling 0.24.1",
  "proc-macro2",
@@ -2030,7 +2041,7 @@ dependencies = [
 
 [[package]]
 name = "rsmack-megamac"
-version = "0.20.0"
+version = "1.0.0"
 dependencies = [
  "bon",
  "criterion",
@@ -2045,7 +2056,7 @@ dependencies = [
 
 [[package]]
 name = "rsmack-seanum"
-version = "0.20.0"
+version = "1.0.0"
 dependencies = [
  "criterion",
  "darling 0.24.1",
@@ -2064,7 +2075,7 @@ dependencies = [
 
 [[package]]
 name = "rsmack-ui-tests"
-version = "0.20.0"
+version = "1.0.0"
 dependencies = [
  "fake",
  "rsmack-edoc",
@@ -2081,7 +2092,7 @@ dependencies = [
 
 [[package]]
 name = "rsmack-utils"
-version = "0.20.0"
+version = "1.0.0"
 dependencies = [
  "bon",
  "build-print",
@@ -2097,7 +2108,7 @@ dependencies = [
 
 [[package]]
 name = "rsmack-wrap"
-version = "0.20.0"
+version = "1.0.0"
 dependencies = [
  "criterion",
  "darling 0.24.1",
