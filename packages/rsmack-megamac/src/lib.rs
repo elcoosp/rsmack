@@ -22,12 +22,17 @@ fn exec(args: &impls::megamac::Args, env: &ExecEnv) -> TokenStream2 {
 /// * `kind` - The kind of macro to generate, one of `Func`, `Attr` or `Derive`
 /// * `name` - The name of the generated macro
 /// * `impls` - Ident of the implementations module (defaults to `impls`)
-/// * `args` - Ident of the args struct (defaults to `Args`)
+/// * `args` - Ident of the args struct (defaults to `Args`, darling payload mode only)
 /// * `doc` - Documentation source of the generated macro: `readme` embeds the calling
-///   crate's `../README.md`, `inline` (default) only emits the generated parameters docs
+///   crate's `../README.md`, `inline` (default) only emits the generated parameters docs,
+///   `none` emits no documentation
 ///
+/// The payload protocol is **signature-driven**: when `exec` takes a
+/// `proc_macro2::TokenStream` first parameter the payload tokens are forwarded raw
+/// (DSL-style macros); otherwise they are darling-parsed into the documented args struct.
 /// The parsed item type of `Attr` and `Derive` macros is inferred from the `exec`
-/// signature of the implementation, so no receiver configuration is needed.
+/// signature of the implementation, so no receiver configuration is needed. Derive
+/// macros receive no payload and get no `# Parameters` section.
 ///
 /// # Examples
 ///
