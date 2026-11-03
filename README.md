@@ -1,13 +1,18 @@
 <div align="center">
   <img src="docs/logo.png" alt="rsmack Logo" width="200"/>
   <p>
-    <strong>A Rust proc-macro factory: write the <code>exec</code> function, get a documented macro.</strong><br/>
-    Multi-crate Cargo workspace where <code>megamac!</code> generates function-like, attribute and derive macros with automatic parameter documentation, prefixed diagnostics built on <code>syn::Error</code>, and zero panics in your expansions. Ship macros like <code>edoc</code> (docs from constants, with const-expression evaluation), <code>wrap</code> (field type wrappers), <code>seanum</code> (SeaORM enums with migrations) and <code>folder_iso_struct</code> (compile-time folder mirroring) — or roll your own in a dozen lines.
+    <strong>The Rust proc-macro factory: write the <code>exec</code> function, get a documented macro.</strong><br/>
+    One <code>cargo add rsmack</code> for every macro: <code>edoc</code> (docs from constants, with typed
+    const-expression evaluation), <code>wrap</code> (field type wrappers, any type),
+    <code>seanum</code> (<code>SeaORM</code> enums with discriminants + migrations),
+    <code>folder_iso_struct</code> (inline compile-time folder mirroring) — or roll your own in a
+    dozen lines with <code>megamac</code>, the signature-driven macro factory. Prefixed
+    diagnostics on <code>syn::Error</code>, zero panics, process-global caches.
   </p>
   <p>
     <img src="https://img.shields.io/badge/Rust-1.94%2B%20%7C%202024-000000?style=flat-square&logo=rust" alt="Rust"/>
     <img src="https://img.shields.io/badge/License-MIT-blue?style=flat-square" alt="License MIT"/>
-    <img src="https://img.shields.io/badge/Crates-6-6F4E37?style=flat-square" alt="Crates"/>
+    <img src="https://img.shields.io/badge/Crates-7-6F4E37?style=flat-square" alt="Crates"/>
     <img src="https://img.shields.io/badge/Coverage-100%25-brightgreen?style=flat-square" alt="Coverage"/>
     <img src="https://img.shields.io/badge/CI-passing-brightgreen?style=flat-square&logo=githubactions" alt="CI"/>
     <img src="https://img.shields.io/badge/Diagnostics-syn%3A%3AError%20%2B%20collected-007ACC?style=flat-square" alt="Diagnostics"/>
@@ -26,35 +31,27 @@ that boilerplate into a workspace of composable crates** so a macro author only 
 1. a `pub struct Args` with darling-derivable fields — *its doc comments become the
    generated macro's `# Parameters` section*;
 2. a `pub fn exec(args, item, env: &ExecEnv) -> TokenStream` that does the actual
-   transformation.
+   transformation — *or, for DSL macros, an `exec` taking the raw `TokenStream`*.
 
-Everything else — entrypoint generation for the three macro kinds (single-sourced in the
-`rsmack_utils::exec` drivers), documentation extraction, error plumbing, build-time file
-generation — is handled by the framework.
+Everything else — entrypoint generation for the three macro kinds, payload-protocol
+selection, documentation extraction, error plumbing, file codegen — is handled by the
+framework.
 
 > [!TIP]
 > Look at [`packages/rsmack-example-macros`](packages/rsmack-example-macros): it is a
-> living example crate exercising every macro kind end to end in the test suite.
-
-## Crates
-
-| Crate | Kind | Description |
-| --- | --- | --- |
-| [`rsmack-megamac`](https://docs.rs/rsmack-megamac) | proc-macro | `megamac!` — generate other proc-macros with automated documentation |
-| [`rsmack-utils`](https://docs.rs/rsmack-utils) | library | `ExecEnv`/`Logr` diagnostics, entrypoint drivers, fs helpers |
-| [`rsmack-edoc`](https://docs.rs/rsmack-edoc) | proc-macro | `#[edoc]` — struct field docs evaluated from literals, constants and const expressions |
-| [`rsmack-wrap`](https://docs.rs/rsmack-wrap) | proc-macro | `#[wrap]` — wrap struct field types, per-field overrides |
-| [`rsmack-seanum`](https://docs.rs/rsmack-seanum) | proc-macro | `#[seanum]` — SeaORM active enums with sane defaults + migration helpers |
-| [`rsmack-fs`](https://docs.rs/rsmack-fs) | proc-macro | `#[folder_iso_struct]` — mirror a folder structure at compile time, recursively if wanted |
-
-Support tooling (not published): [`rsmack-example-macros`](packages/rsmack-example-macros)
-(living examples), [`rsmack-ui-tests`](packages/rsmack-ui-tests) (trybuild snapshots of
-every error path), [`benches/`](packages) (criterion expansion benchmarks) and
-[`fuzz/`](fuzz) (libfuzzer targets for the parsers).
+> living example crate exercising every macro kind (including a raw-payload DSL macro)
+> end to end in the test suite.
 
 ## Installation
 
-Each macro is a standalone crate — depend only on what you use:
+One dependency for everything:
+
+```shell
+cargo add rsmack                       # every macro
+cargo add rsmack --no-default-features --features edoc   # just one
+```
+
+Each macro is also a standalone crate — depend only on what you use:
 
 ```shell
 cargo add rsmack-edoc     # or rsmack-wrap, rsmack-seanum, rsmack-fs
@@ -68,11 +65,11 @@ Rust **1.94+** (edition 2024) is required — pinned by `sea-orm 2`.
 ### `edoc` — documentation from constants
 
 Evaluate `#[edoc((...))]` tuples of string literals, constant references and **const
-expressions** into real `#[doc]` attributes. The constants file supports literals,
-arithmetic/bitwise/shift/comparison expressions, casts, `concat!`, `env!`,
-`option_env!` and const-to-const references. Resolution is memoized per file
-(process-global, mtime-validated), and every broken expression of a struct is reported
-in one pass instead of failing on the first.
+expressions** into real `#[doc]` attributes — on struct fields, enum variants and the
+item itself. The constants file supports literals, arithmetic/bitwise/shift/comparison
+expressions, casts, `concat!`, `env!`, `option_env!` and const-to-const references
+resolved against **full module paths**. Resolution is memoized per file (process-global,
+mtime-validated), and every broken expression of an item is reported in one pass.
 
 ```rust
 use rsmack_edoc::edoc;
@@ -90,11 +87,11 @@ struct Client {
 }
 ```
 
-### `wrap` — wrap field types
+### `wrap` — wrap field types (any type)
 
-Wrap every field of a named struct in a generic type. `Path`, `Slice`, `Tuple` and
-`Array` field types are supported; unsupported types keep their original type and emit a
-collected error. Per-field `#[wrap(...)]` attributes give fine-grained control.
+Wrap every field of a named struct in a generic type — paths, slices, tuples, arrays,
+references, pointers, function pointers and trait objects all wrap. Per-field
+`#[wrap(...)]` attributes give fine-grained control.
 
 ```rust
 use rsmack_wrap::wrap;
@@ -120,7 +117,8 @@ use rsmack_seanum::seanum;
 #[seanum(
     rs_type = "String",
     db_type = "String(sea_orm::sea_query::StringLen::None)",
-    derives("Display")
+    rename_all = "snake_case",
+    derives("::serde::Serialize", "::serde::Deserialize")
 )]
 #[derive(Default)]
 pub enum SwitchAction {
@@ -131,34 +129,28 @@ pub enum SwitchAction {
 }
 ```
 
-The enum name is snake_cased for `enum_name`, each variant gets its `string_value`
-(overridable per variant with `#[seanum(rename = "...")]`), and the derive list
-(`Clone`, `Dummy`, `Debug`, `EnumIter`, `DeriveActiveEnum`, `Eq`, `Serialize`,
-`Deserialize`, `Hash`, plus any `derives(...)`) is generated for you.
+Minimal default derives (`Clone`, `Debug`, `PartialEq`, `Eq`, `Hash`, `EnumIter`,
+`DeriveActiveEnum`) — `serde`/`fake` are **opt-in**, never hidden dependencies.
+`rename_all` normalizes every non-renamed value, `enum_name = "..."` overrides the table
+name. Integer `rs_type` adds `#[repr(...)]`, `#[sea_orm(num_value = N)]` and a
+value-based `TryFrom` honoring explicit discriminants (`A = 10, B` continues from 11;
+duplicates are reported). `migration = true` generates a `migration_column_def()`
+helper (requires [`sea-orm-migration`](https://docs.rs/sea-orm-migration)).
 
-**Integer primary keys**: with an integer `rs_type` (`"i32"`, `"u8"`, ...) the macro
-adds `#[repr(...)]`, per-variant `#[sea_orm(num_value = N)]` and an index-based
-`TryFrom<rs_type>` implementation. **Migrations**: `migration = true` generates a
-`SwitchAction::migration_column_def()` helper (requires the
-[`sea-orm-migration`](https://docs.rs/sea-orm-migration) dependency) returning a ready
-`ColumnDef` for the enum's column.
+### `folder_iso_struct` — inline compile-time folder mirroring
 
-### `folder_iso_struct` — compile-time folder mirroring
-
-Annotate a struct, call `YourStruct::generate()` from a build step, and a struct file
-mirroring a folder of Rust modules is written into `OUT_DIR`. With
-`recursive = true`, subdirectories become nested modules with their own mirrored
-structs; `vis` controls the visibility of every generated item.
+One attribute, zero build script: the folder is scanned at expansion time and the
+mirrored struct is emitted inline. With `recursive = true`, subdirectories become nested
+modules with their own mirrored structs; the annotated struct's attributes and
+visibility carry over, `derives(...)` injects extra derives on every generated struct.
 
 ```rust,ignore
 use rsmack_fs::folder_iso_struct;
 
-#[folder_iso_struct(from_crate = "my_crate", folder = "levels", vis = "pub(crate)", recursive = true)]
-struct Levels {
-    alpha: (),
+#[folder_iso_struct(folder = "levels", vis = "pub(crate)", recursive = true, derives("Debug"))]
+pub struct Levels {
+    // The declared fields are a sketch only: the mirror is generated from the folder.
 }
-
-// in build.rs (or anywhere at build time): Levels::generate();
 ```
 
 ### Write your own macro with `megamac`
@@ -200,10 +192,27 @@ pub fn exec(args: Args, env: &ExecEnv) -> TokenStream {
 }
 ```
 
+**The payload protocol is signature-driven** — the `exec` signature *is* the
+configuration:
+
+- `exec(args: Args, env: &ExecEnv)` — darling meta parsing, docs extracted from `Args`
+  (field docs → `# Parameters`, struct docs → intro, `Option<T>` / `#[darling(default)]`
+  fields marked *optional*);
+- `exec(input: TokenStream, env: &ExecEnv)` — **raw payload**, DSL macros in ten lines:
+
+```rust,ignore
+// src/impls/shout.rs — megamac!(kind = Func, name = shout);
+pub fn exec(input: TokenStream, env: &ExecEnv) -> TokenStream {
+    let shouted = input.to_string().to_uppercase();
+    env.finish(quote::quote! { pub const SHOUTED: &str = #shouted; })
+}
+```
+
 Optional knobs: `impls = "my_impls"` / `args = "MyArgs"` rename the implementation
-module and args struct, and `doc = "readme" | "inline"` chooses between embedding the
-calling crate's `README.md` and generating only the parameter docs (default: `inline`,
-**no README dependency**).
+module and args struct, and `doc = "readme" | "inline" | "none"` chooses between
+embedding the calling crate's `README.md`, generating only the parameter docs (default:
+`inline`, no README dependency) or no docs at all. The impl file is parsed once per
+process (memoized by `(path, mtime, len)`).
 
 > [!TIP]
 > **Playground**: print the expansion a `megamac!` call would emit, without compiling
@@ -231,9 +240,11 @@ There is no unwinding, no panic catching, and the generated code carries no
 
 ## Performance
 
-- **Memoized constants**: `edoc` reads and evaluates each constants file once per
-  compilation (process-global cache validated by `(mtime, len)`), so N annotated
-  structs cost one parse — measured in [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md).
+- **Typed const evaluation**: `edoc` keeps constant values machine-typed (`i128`, `f64`,
+  ...) until doc assembly — no per-operation string round-trips.
+- **Process-global caches**: `edoc` memoizes constants-file resolution per
+  `(path, mtime, len)` so N annotated items cost one parse; `megamac` memoizes the
+  impl-file analysis so rust-analyzer re-expansions pay a stat, not a parse.
 - **Feature-gated `syn`**: `rsmack-utils` compiles without syn's `full` feature; only
   crates that parse full items opt in.
 - **Faster iteration for macro authors**: proc-macro recompiles get noticeably quicker
@@ -243,6 +254,8 @@ There is no unwinding, no panic catching, and the generated code carries no
   [profile.dev.package."*"]
   opt-level = 3
   ```
+
+Measured numbers live in [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md).
 
 ## Development
 
@@ -270,5 +283,6 @@ bacon                                         # watch mode (see bacon.toml)
   [`CHANGELOG.md`](CHANGELOG.md).
 - **Dependency updates**: [`renovate`](renovate.json) keeps the manifests fresh.
 
-The remaining roadmap (crate split, deeper const-eval, ...) is maintained in
+The v2 design record (brainstorm, breaking decisions, perf ledger) lives in
+[`docs/DESIGN_v2.md`](docs/DESIGN_v2.md); the remaining roadmap is maintained in
 [`docs/IMPROVEMENTS.md`](docs/IMPROVEMENTS.md).
