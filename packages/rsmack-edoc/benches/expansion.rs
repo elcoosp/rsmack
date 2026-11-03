@@ -31,7 +31,7 @@ fn args_from() -> Args {
 }
 
 /// The struct under measurement: 8 documented fields mixing literals and const refs.
-fn bench_struct() -> syn::ItemStruct {
+fn bench_struct() -> syn::Item {
     syn::parse_quote! {
         struct Client {
             #[edoc(("App: ", APP, " v", VERSION))]
@@ -82,7 +82,7 @@ fn bench_exec_warm_cache(c: &mut Criterion) {
     std::fs::write(src.join("consts.rs"), CONSTS_SOURCE).expect("write consts file");
     // SAFETY: benches are single-threaded binaries
     unsafe { std::env::set_var("CARGO_MANIFEST_DIR", &root) };
-    let env = ExecEnv::builder("rsmack_edoc::impls").build();
+    let env = ExecEnv::new("rsmack_edoc::impls");
     let warmup = exec(args_from(), bench_struct(), &env);
     assert!(!warmup.to_string().contains("compile_error"));
 
@@ -111,7 +111,7 @@ fn bench_missing_consts_file(c: &mut Criterion) {
     let root = Path::new(env!("CARGO_MANIFEST_DIR"));
     // SAFETY: benches are single-threaded binaries
     unsafe { std::env::set_var("CARGO_MANIFEST_DIR", root) };
-    let env = ExecEnv::builder("rsmack_edoc::impls").build();
+    let env = ExecEnv::new("rsmack_edoc::impls");
     c.bench_function("edoc/exec_missing_consts_file", |b| {
         b.iter(|| exec(args_from(), black_box(bench_struct()), &env).to_string());
     });
