@@ -24,7 +24,10 @@ fn seed_scratch_fixtures() {
             let _ = std::fs::write(path, content);
         }
     };
-    write("src/consts.rs", "pub const APP: &str = \"ui-tests\";\n");
+    write(
+        "src/consts.rs",
+        "pub const APP: &str = \"ui-tests\";\n\nmod a {\n    pub const NAME: &str = \"from-a\";\n}\n\nmod b {\n    pub const NAME: &str = \"from-b\";\n}\n",
+    );
     write("src/impls/broken.rs", "this is not rust at all $$$\n");
 }
 
