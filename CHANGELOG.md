@@ -4,6 +4,58 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.0.0] - 2026-11-03
+
+### Features
+
+- [**breaking**] Signature-driven payload protocol for `megamac`: an `exec` taking a
+  `proc_macro2::TokenStream` first parameter receives the raw payload (DSL macros),
+  otherwise the payload is darling-parsed into the documented args struct; the args
+  ident follows the `exec` signature and `doc = "none"` joins `readme`/`inline`
+
+- [**breaking**] New `rsmack` facade crate: every macro behind one feature-gated
+  dependency (`cargo add rsmack`)
+
+- Megamac impl-file analysis cache (process-global, `(path, mtime, len)` keyed, plain
+  data only), richer generated docs (args-struct intro paragraph, `*(optional)*` markers
+  from `Option<T>`/`#[darling(default)]`, no `# Parameters` section when there are no
+  parameters) and derive macros no longer document a payload
+
+- [**breaking**] Typed const-eval for `edoc` (`ConstValue`: str/int/float/bool/bytes/
+  char), path-aware constants (full module paths, unique bare-name fallback, ambiguity
+  errors with sorted candidates), enum variant docs and item-level docs, float/bool cast
+  support, deterministic diagnostics
+
+- [**breaking**] `wrap` wraps **every** field type (references, raw pointers, bare fns,
+  trait objects); the unsupported-type error path is gone
+
+- [**breaking**] `seanum` minimal default derives (no hidden `serde`/`fake`),
+  explicit integer discriminants with duplicate detection, `rename_all = "..."` and
+  `enum_name = "..."` options
+
+- [**breaking**] `folder_iso_struct` emits the mirrored struct **inline** at expansion
+  time (no build script, no `OUT_DIR`, no `include!`); `from_crate` and the
+  `generate()` flow are gone, `derives(...)` is new, visibility defaults to the
+  annotated struct's
+
+- `rsmack-utils`: `ExecEnv::new`/`Logr::new` constructors replace the bon builders,
+  raw-payload entrypoint drivers (`func_raw_entrypoint`, `attr_raw_entrypoint`),
+  fallible `scan_modules`/`ModuleTree::render` shared by the macro and build scripts,
+  shared `staleness_key` cache helper
+
+### Documentation
+
+- Rewrite the workspace README and every crate README for the v2 protocol
+
+- Add docs/DESIGN_v2.md (brainstorm, breaking decisions, perf ledger)
+
+### Performance
+
+- Megamac warm expansions pay a metadata stat instead of a full read + parse
+  (~1.3 ms saved per re-expansion)
+
+- Edoc const arithmetic operates on machine integers/floats; doc assembly formats once
+
 ## [0.20.0] - 2026-11-01
 
 ### Features
