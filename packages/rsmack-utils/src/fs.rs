@@ -1,4 +1,11 @@
 //! [rsmack-fs](../rsmack_fs/index.html) related utils
+//!
+//! Two consumers share this module:
+//!
+//! * the [`folder_iso_struct`] attribute macro (inline expansion-time codegen), which
+//!   needs the fallible [`scan_modules`] / [`ModuleTree::render`] pair;
+//! * build scripts, which use the [`folder_iso_struct`] builder and [`generate_file`]
+//!   for explicit `OUT_DIR` codegen.
 
 use std::{
     fs::File,
@@ -11,6 +18,18 @@ use bon::builder;
 use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use syn::Ident;
+
+/// Cache validation key of a file: `(mtime, len)`, or `None` when the metadata cannot
+/// be read (the caller then simply re-parses).
+#[must_use]
+pub fn staleness_key(path: &Path) -> Option<(std::time::SystemTime, u64)> {
+    std::fs::metadata(path).ok().and_then(|metadata| {
+        metadata
+            .modified()
+            .ok()
+            .map(|mtime| (mtime, metadata.len()))
+    })
+}
 
 /// Get the directory (workspace root) from which we are compiling.
 ///
@@ -44,72 +63,88 @@ fn workspace_root_from(start: &Path) -> PathBuf {
 
 /// A folder entry mapped to a struct field: the module identifier and the mirrored
 /// `PascalCase` type identifier.
-struct ModuleField {
-    mod_ident: Ident,
-    ty_ident: Ident,
+#[derive(Debug)]
+pub struct ModuleField {
+    /// The module identifier (`snake_case` file stem).
+    pub mod_ident: Ident,
+    /// The mirrored type identifier (`PascalCase` file stem).
+    pub ty_ident: Ident,
 }
 
 /// A scanned directory: its own fields (files) and, in recursive mode, one nested
-/// [`FolderNode`] per subdirectory.
-struct FolderNode {
-    fields: Vec<ModuleField>,
-    dirs: Vec<(Ident, FolderNode)>,
+/// [`ModuleTree`] per subdirectory.
+#[derive(Debug)]
+pub struct ModuleTree {
+    /// Files of the directory, mirrored as struct fields.
+    pub fields: Vec<ModuleField>,
+    /// Subdirectories, mirrored as nested modules (recursive mode only).
+    pub dirs: Vec<(Ident, ModuleTree)>,
 }
 
-/// List the directory entries of `mods_folder`, sorted by name for deterministic output.
-///
-/// # Panics
-/// - If `mods_folder` cannot be read
-fn sorted_entries(mods_folder: &Path) -> Vec<PathBuf> {
-    let entries = std::fs::read_dir(mods_folder).expect("Failed to read the folder to mirror");
-    let mut paths: Vec<PathBuf> = entries
-        .map(|entry| entry.expect("Failed to read a folder entry").path())
-        .collect();
-    paths.sort();
-    paths
-}
-
-/// Scan a folder of rust modules into a [`FolderNode`].
-///
-/// `mod.rs` files are skipped. Files always become fields; directories become fields
-/// too in flat mode (legacy behavior) or nested [`FolderNode`]s when `recursive` is set.
-///
-/// # Panics
-/// - If a file stem is not valid UTF-8
-fn scan_folder(mods_folder: &Path, recursive: bool) -> FolderNode {
-    let opts = stringcase::Options {
+/// The `stringcase` options turning `snake_case` file stems into `PascalCase` types.
+fn pascal_options() -> stringcase::Options<'static> {
+    stringcase::Options {
         separate_before_non_alphabets: true,
         separate_after_non_alphabets: true,
         separators: "_",
         keep: "",
-    };
-    let mut node = FolderNode {
+    }
+}
+
+/// List the directory entries of `mods_folder`, sorted by name for deterministic output.
+fn sorted_entries(mods_folder: &Path) -> Result<Vec<PathBuf>, String> {
+    let entries =
+        std::fs::read_dir(mods_folder).map_err(|e| format!("{}: {e}", mods_folder.display()))?;
+    let mut paths: Vec<PathBuf> = Vec::new();
+    for entry in entries {
+        let entry = entry.map_err(|e| format!("{}: {e}", mods_folder.display()))?;
+        paths.push(entry.path());
+    }
+    paths.sort();
+    Ok(paths)
+}
+
+/// Scan a folder of rust modules into a [`ModuleTree`].
+///
+/// `mod.rs` files are skipped. Files always become fields; directories become fields
+/// too in flat mode (legacy behavior) or nested [`ModuleTree`]s when `recursive` is set.
+///
+/// # Errors
+/// A readable-folder / UTF-8-stem violation is reported as a user-facing message; the
+/// macro maps it to a `syn::Error`, the build-script builder panics on it.
+pub fn scan_modules(mods_folder: &Path, recursive: bool) -> Result<ModuleTree, String> {
+    let opts = pascal_options();
+    let mut node = ModuleTree {
         fields: Vec::new(),
         dirs: Vec::new(),
     };
-    for path in sorted_entries(mods_folder) {
-        push_entry(&mut node, &path, recursive, &opts);
+    for path in sorted_entries(mods_folder)? {
+        push_entry(&mut node, &path, recursive, &opts)?;
     }
-    node
+    Ok(node)
 }
 
 /// Mirror one directory entry into `node`: skipped for `mod.rs`, a nested directory
 /// mirror in recursive mode, a [`ModuleField`] otherwise.
-///
-/// # Panics
-/// - If the file stem is not valid UTF-8
-fn push_entry(node: &mut FolderNode, path: &Path, recursive: bool, opts: &stringcase::Options) {
-    let stem = path
-        .file_stem()
-        .and_then(|s| s.to_str())
-        .expect("Non UTF-8 or stem-less module file name");
+fn push_entry(
+    node: &mut ModuleTree,
+    path: &Path,
+    recursive: bool,
+    opts: &stringcase::Options,
+) -> Result<(), String> {
+    let stem = path.file_stem().and_then(|s| s.to_str()).ok_or_else(|| {
+        format!(
+            "Non UTF-8 or stem-less module file name: `{}`",
+            path.display()
+        )
+    })?;
     // `mod.rs` files are module glue, not mirrored types.
     if stem == "mod" {
-        return;
+        return Ok(());
     }
     let mod_ident = parse_id_maybe_raw(stem);
     if path.is_dir() && recursive {
-        let child = scan_folder(path, recursive);
+        let child = scan_modules(path, recursive)?;
         node.dirs.push((mod_ident, child));
     } else {
         let ty_ident = parse_id_maybe_raw(&stringcase::pascal_case_with_options(stem, opts));
@@ -118,40 +153,45 @@ fn push_entry(node: &mut FolderNode, path: &Path, recursive: bool, opts: &string
             ty_ident,
         });
     }
+    Ok(())
 }
 
-/// Render the struct mirroring `node`, prefixed by `crate_path` (e.g. `crate::folder`).
+/// Render the struct mirroring `self`, prefixed by `crate_path` (e.g. `crate::folder`).
 ///
-/// Nested directories are rendered as inline `pub mod` blocks, each containing their own
-/// mirrored struct.
-fn render_struct(
-    node: &FolderNode,
-    name: &Ident,
-    crate_path: &TokenStream,
-    pre: &TokenStream,
-    vis: &syn::Visibility,
-) -> TokenStream {
-    let fields_ts = node.fields.iter().map(|f| {
-        let mod_ident = &f.mod_ident;
-        let ty_ident = &f.ty_ident;
-        let ty_path = quote! { #crate_path::#mod_ident::#ty_ident };
-        quote! { #mod_ident: #ty_path }
-    });
-    let mods_ts = node.dirs.iter().map(|(mod_ident, child)| {
-        let child_name = parse_id_maybe_raw(&stringcase::pascal_case(&mod_ident.to_string()));
-        let child_path = quote! { #crate_path::#mod_ident };
-        let child_struct = render_struct(child, &child_name, &child_path, pre, vis);
-        quote! {
-            #vis mod #mod_ident {
-                #child_struct
+/// `attrs` are emitted above every generated struct; nested directories are rendered as
+/// inline `pub mod` blocks, each containing their own mirrored struct.
+impl ModuleTree {
+    /// Render the mirrored struct (and its nested modules) into tokens.
+    #[must_use]
+    pub fn render(
+        &self,
+        name: &Ident,
+        crate_path: &TokenStream,
+        attrs: &TokenStream,
+        vis: &syn::Visibility,
+    ) -> TokenStream {
+        let fields_ts = self.fields.iter().map(|f| {
+            let mod_ident = &f.mod_ident;
+            let ty_ident = &f.ty_ident;
+            let ty_path = quote! { #crate_path::#mod_ident::#ty_ident };
+            quote! { #mod_ident: #ty_path }
+        });
+        let mods_ts = self.dirs.iter().map(|(mod_ident, child)| {
+            let child_name = parse_id_maybe_raw(&stringcase::pascal_case(&mod_ident.to_string()));
+            let child_path = quote! { #crate_path::#mod_ident };
+            let child_struct = child.render(&child_name, &child_path, attrs, vis);
+            quote! {
+                #vis mod #mod_ident {
+                    #child_struct
+                }
             }
-        }
-    });
-    quote! {
-        #pre
-        #vis struct #name {
-            #(#fields_ts,)*
-            #(#mods_ts)*
+        });
+        quote! {
+            #attrs
+            #vis struct #name {
+                #(#fields_ts,)*
+                #(#mods_ts)*
+            }
         }
     }
 }
@@ -162,6 +202,9 @@ fn render_struct(
 /// With `recursive = true`, subdirectories become nested `pub mod` blocks holding their
 /// own mirrored struct. `vis` controls the visibility of every generated item
 /// (`"pub"`, `"pub(crate)"`, ...).
+///
+/// This is the build-script flavor writing into `OUT_DIR`; the attribute macro flavor
+/// lives in [`rsmack-fs`](../rsmack_fs/index.html).
 ///
 /// # Panics
 /// - If `vis` is not a valid [`syn::Visibility`]
@@ -183,7 +226,8 @@ pub fn folder_iso_struct(
     });
     let ccd = calling_crate_dir();
     let mods_folder_path = ccd.join(from_crate).join("src").join(folder);
-    let root = scan_folder(&mods_folder_path, recursive);
+    let root = scan_modules(&mods_folder_path, recursive)
+        .unwrap_or_else(|reason| panic!("Failed to scan the folder to mirror: {reason}"));
     if log_enabled {
         for f in &root.fields {
             custom_println!(
@@ -200,12 +244,13 @@ pub fn folder_iso_struct(
     let name_id = parse_id_maybe_raw(name);
     let folder_id = parse_id_maybe_raw(folder);
     let crate_path = quote! { crate::#folder_id };
-    let output = render_struct(&root, &name_id, &crate_path, pre, &visibility);
+    let output = root.render(&name_id, &crate_path, pre, &visibility);
     generate_file(format!("{name}.rs"), output.to_string().as_bytes());
 }
 
 /// Parse an identifier, falling back to a raw identifier for keywords.
-fn parse_id_maybe_raw(s: &str) -> Ident {
+#[must_use]
+pub fn parse_id_maybe_raw(s: &str) -> Ident {
     syn::parse_str::<Ident>(s).unwrap_or_else(|_| Ident::new_raw(s, Span::call_site()))
 }
 
@@ -280,13 +325,26 @@ mod tests {
     }
 
     #[test]
-    fn scan_folder_flat_mode_maps_dirs_to_fields() {
+    fn staleness_key_tracks_metadata_and_tolerates_missing_files() {
+        let dir = tempdir("staleness");
+        let file = dir.join("data.rs");
+        assert!(staleness_key(&file).is_none());
+        std::fs::write(&file, b"const DEMO: u8 = 1;").expect("write file");
+        let key = staleness_key(&file).expect("key of an existing file");
+        std::fs::write(&file, b"const DEMO: u8 = 255;").expect("rewrite file");
+        let next = staleness_key(&file).expect("key after rewrite");
+        assert_ne!(key.1, next.1, "the length changed, the key must follow");
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn scan_modules_flat_mode_maps_dirs_to_fields() {
         let dir = tempdir("scan-flat");
         for file in ["alpha.rs", "beta_gamma.rs", "mod.rs", "snake_case.rs"] {
             std::fs::write(dir.join(file), "").expect("write module file");
         }
         std::fs::create_dir(dir.join("nested_dir")).expect("create nested dir");
-        let node = scan_folder(&dir, false);
+        let node = scan_modules(&dir, false).expect("scan succeeds");
         let mut rendered: Vec<(String, String)> = node
             .fields
             .iter()
@@ -307,13 +365,13 @@ mod tests {
     }
 
     #[test]
-    fn scan_folder_recursive_mode_nests_directories() {
+    fn scan_modules_recursive_mode_nests_directories() {
         let dir = tempdir("scan-recursive");
         std::fs::write(dir.join("alpha.rs"), "").expect("write alpha");
         let nested = dir.join("nested_dir");
         std::fs::create_dir(&nested).expect("create nested dir");
         std::fs::write(nested.join("deep_file.rs"), "").expect("write deep file");
-        let node = scan_folder(&dir, true);
+        let node = scan_modules(&dir, true).expect("scan succeeds");
         assert_eq!(node.fields.len(), 1);
         assert_eq!(node.dirs.len(), 1);
         let (ident, child) = &node.dirs[0];
@@ -323,25 +381,27 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Failed to read the folder to mirror")]
-    fn scan_folder_panics_on_missing_folder() {
-        let _ = scan_folder(Path::new("/definitely/not/a/folder"), false);
+    fn scan_modules_reports_missing_folder_as_message() {
+        let err = scan_modules(Path::new("/definitely/not/a/folder"), false)
+            .expect_err("missing folder fails");
+        assert!(err.contains("/definitely/not/a/folder"));
     }
 
     #[test]
-    #[should_panic(expected = "Non UTF-8 or stem-less module file name")]
-    fn scan_folder_panics_on_non_utf8_file_name() {
+    fn scan_modules_reports_non_utf8_file_names() {
         use std::os::unix::ffi::OsStrExt;
         let dir = tempdir("non-utf8");
         std::fs::create_dir_all(&dir).expect("create dir");
         let bad_name = std::ffi::OsStr::from_bytes(b"\xff\xfe.rs");
         std::fs::write(dir.join(bad_name), b"").expect("write non utf-8 file");
-        let _ = scan_folder(&dir, false);
+        let err = scan_modules(&dir, false).expect_err("non utf-8 stem fails");
+        assert!(err.contains("Non UTF-8 or stem-less module file name"));
+        std::fs::remove_dir_all(&dir).ok();
     }
 
     #[test]
     fn render_struct_renders_fields_with_pre_attrs() {
-        let node = FolderNode {
+        let node = ModuleTree {
             fields: vec![ModuleField {
                 mod_ident: parse_id_maybe_raw("alpha"),
                 ty_ident: parse_id_maybe_raw("Alpha"),
@@ -350,14 +410,14 @@ mod tests {
         };
         let vis: syn::Visibility = syn::parse_str("pub").expect("vis");
         let crate_path = quote! { crate::levels };
-        let rendered = render_struct(
-            &node,
-            &parse_id_maybe_raw("Levels"),
-            &crate_path,
-            &quote! { #[derive(Debug)] },
-            &vis,
-        )
-        .to_string();
+        let rendered = node
+            .render(
+                &parse_id_maybe_raw("Levels"),
+                &crate_path,
+                &quote! { #[derive(Debug)] },
+                &vis,
+            )
+            .to_string();
         assert!(rendered.contains("# [derive (Debug)]"));
         assert!(rendered.contains("pub struct Levels"));
         assert!(rendered.contains("alpha : crate :: levels :: alpha :: Alpha"));
@@ -365,14 +425,14 @@ mod tests {
 
     #[test]
     fn render_struct_renders_nested_modules_recursively() {
-        let child = FolderNode {
+        let child = ModuleTree {
             fields: vec![ModuleField {
                 mod_ident: parse_id_maybe_raw("deep_file"),
                 ty_ident: parse_id_maybe_raw("DeepFile"),
             }],
             dirs: Vec::new(),
         };
-        let root = FolderNode {
+        let root = ModuleTree {
             fields: vec![ModuleField {
                 mod_ident: parse_id_maybe_raw("alpha"),
                 ty_ident: parse_id_maybe_raw("Alpha"),
@@ -381,14 +441,9 @@ mod tests {
         };
         let vis: syn::Visibility = syn::parse_str("pub(crate)").expect("vis");
         let crate_path = quote! { crate::tree };
-        let rendered = render_struct(
-            &root,
-            &parse_id_maybe_raw("Tree"),
-            &crate_path,
-            &quote! {},
-            &vis,
-        )
-        .to_string();
+        let rendered = root
+            .render(&parse_id_maybe_raw("Tree"), &crate_path, &quote! {}, &vis)
+            .to_string();
         assert!(rendered.contains("pub (crate) mod nested_dir"));
         assert!(rendered.contains("pub (crate) struct NestedDir"));
         assert!(
@@ -461,6 +516,21 @@ mod tests {
             .from_crate("target/nope")
             .folder("nope")
             .vis("definitely not a visibility")
+            .call();
+    }
+
+    #[test]
+    #[should_panic(expected = "Failed to scan the folder to mirror")]
+    fn folder_iso_struct_panics_on_missing_folder() {
+        let _guard = env_guard();
+        let out = tempdir("out-dir-missing-folder");
+        // SAFETY: env mutations are serialized by `ENV_LOCK`
+        unsafe { std::env::set_var("OUT_DIR", &out) };
+        folder_iso_struct()
+            .name("Nope")
+            .pre(&quote! {})
+            .from_crate("target/definitely-missing")
+            .folder("nope")
             .call();
     }
 
