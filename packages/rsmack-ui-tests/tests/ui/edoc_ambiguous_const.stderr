@@ -1,0 +1,11 @@
+error: #[rsmack_edoc::edoc] Ambiguous const `NAME`, qualify the path: `a::NAME`, `b::NAME`
+ --> tests/ui/edoc_ambiguous_const.rs:5:22
+  |
+5 |     #[edoc(("App: ", NAME))]
+  |                      ^^^^
+
+error[E0601]: `main` function not found in crate `$CRATE`
+ --> tests/ui/edoc_ambiguous_const.rs:7:2
+  |
+7 | }
+  |  ^ consider adding a `main` function to `$DIR/tests/ui/edoc_ambiguous_const.rs`
