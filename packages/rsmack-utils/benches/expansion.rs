@@ -13,7 +13,7 @@ use rsmack_utils::megamac::ExecEnv;
 fn bench_logr_collected_errors(c: &mut Criterion) {
     c.bench_function("utils/logr_collect_4_errors", |b| {
         b.iter(|| {
-            let logr = Logr::builder().prefix("bench::macro").build();
+            let logr = Logr::new("bench::macro");
             for index in 0..4 {
                 logr.emit_error(
                     proc_macro2::Span::call_site(),
@@ -26,7 +26,7 @@ fn bench_logr_collected_errors(c: &mut Criterion) {
 }
 
 fn bench_finish_result_ok(c: &mut Criterion) {
-    let env = ExecEnv::builder("bench::macro").build();
+    let env = ExecEnv::new("bench::macro");
     c.bench_function("utils/finish_result_ok", |b| {
         b.iter(|| env.finish_result(Ok(black_box(quote::quote! { struct Demo; }))));
     });
@@ -34,7 +34,7 @@ fn bench_finish_result_ok(c: &mut Criterion) {
 
 fn bench_exec_env_build(c: &mut Criterion) {
     c.bench_function("utils/exec_env_build", |b| {
-        b.iter(|| ExecEnv::builder(black_box("bench::macro::demo")).build());
+        b.iter(|| ExecEnv::new(black_box("bench::macro::demo")));
     });
 }
 
