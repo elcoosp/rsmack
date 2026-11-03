@@ -23,7 +23,7 @@ fn args_from(tokens: proc_macro2::TokenStream) -> seanum::Args {
 }
 
 fn bench_string_enum(c: &mut Criterion) {
-    let env = ExecEnv::builder("rsmack_seanum::impls").build();
+    let env = ExecEnv::new("rsmack_seanum::impls");
     c.bench_function("seanum/exec_8_variants_string", |b| {
         b.iter(|| {
             let args = args_from(quote::quote! { rs_type = "String", db_type = "String" });
@@ -38,7 +38,7 @@ fn bench_string_enum(c: &mut Criterion) {
 }
 
 fn bench_integer_enum_with_try_from(c: &mut Criterion) {
-    let env = ExecEnv::builder("rsmack_seanum::impls").build();
+    let env = ExecEnv::new("rsmack_seanum::impls");
     c.bench_function("seanum/exec_8_variants_integer_migration", |b| {
         b.iter(|| {
             let args = args_from(quote::quote! {
