@@ -26,7 +26,7 @@ fn args_from(tokens: proc_macro2::TokenStream) -> megamac_impls::Args {
 }
 
 fn bench_func_generation(c: &mut Criterion) {
-    let env = ExecEnv::builder("rsmack_megamac::impls").build();
+    let env = ExecEnv::new("rsmack_megamac::impls");
     let args = args_from(quote::quote! { kind = "Func", name = "megamac" });
     c.bench_function("megamac/exec_func_generation", |b| {
         b.iter(|| megamac_impls::run(black_box(&args), &env, black_box(&package_src_folder())));
@@ -34,7 +34,7 @@ fn bench_func_generation(c: &mut Criterion) {
 }
 
 fn bench_attr_generation(c: &mut Criterion) {
-    let env = ExecEnv::builder("rsmack_megamac::impls").build();
+    let env = ExecEnv::new("rsmack_megamac::impls");
     let args = args_from(quote::quote! { kind = "Attr", name = "megamac" });
     c.bench_function("megamac/exec_attr_generation", |b| {
         b.iter(|| megamac_impls::run(black_box(&args), &env, black_box(&package_src_folder())));
