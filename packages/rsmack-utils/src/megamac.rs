@@ -1,26 +1,29 @@
 //! [rsmack-megamac](../rsmack_megamac/index.html) related utils
 
-use bon::Builder;
 use proc_macro2::TokenStream;
 
 use crate::logr::Logr;
 
-#[derive(Debug, Builder)]
-#[builder(on(String, into))]
 /// Execution environment handed to every macro implementation.
 ///
 /// It carries the diagnostic prefix (usually `concat!(module_path!(), "::", "macro_name")`)
 /// and the [`Logr`] collector configured with it.
 pub struct ExecEnv {
     /// Prefix prepended to every diagnostic message (e.g. `rsmack_edoc::edoc`).
-    #[builder(start_fn)]
     pub prefix: String,
     /// Diagnostics collector pre-configured with [`ExecEnv::prefix`].
-    #[builder(field = Logr::builder().prefix(prefix.clone()).build())]
     pub logr: Logr,
 }
 
 impl ExecEnv {
+    /// Build the environment for a macro whose diagnostics are prefixed with `prefix`.
+    #[must_use]
+    pub fn new(prefix: impl Into<String>) -> Self {
+        let prefix = prefix.into();
+        let logr = Logr::new(prefix.clone());
+        Self { prefix, logr }
+    }
+
     /// Flush the [`Logr`] collected errors into `output` and return the merged token stream.
     pub fn finish(&self, output: TokenStream) -> TokenStream {
         self.logr.finish(output)
@@ -41,22 +44,29 @@ mod tests {
     use quote::quote;
 
     #[test]
-    fn builder_sets_prefix_and_logr() {
-        let env = ExecEnv::builder("my::module::demo").build();
+    fn new_sets_prefix_and_logr() {
+        let env = ExecEnv::new("my::module::demo");
         assert_eq!(env.prefix, "my::module::demo");
         assert_eq!(env.logr.prefix, "my::module::demo");
     }
 
     #[test]
+    fn new_accepts_string_and_str() {
+        let owned = String::from("owned::prefix");
+        assert_eq!(ExecEnv::new(owned).prefix, "owned::prefix");
+        assert_eq!(ExecEnv::new("borrowed").prefix, "borrowed");
+    }
+
+    #[test]
     fn finish_result_renders_ok_output() {
-        let env = ExecEnv::builder("demo").build();
+        let env = ExecEnv::new("demo");
         let output = env.finish_result(Ok(quote! { struct Demo; }));
         assert_eq!(output.to_string(), "struct Demo ;");
     }
 
     #[test]
     fn finish_result_renders_compile_error_on_err() {
-        let env = ExecEnv::builder("demo").build();
+        let env = ExecEnv::new("demo");
         let result: syn::Result<TokenStream> =
             Err(syn::Error::new(proc_macro2::Span::call_site(), "boom"));
         let output = env.finish_result(result);
