@@ -10,18 +10,25 @@ use std::{cell::RefCell, fmt::Display};
 
 use proc_macro2::{Span, TokenStream};
 
-#[derive(Debug, bon::Builder)]
-#[builder(on(String, into))]
 /// Diagnostics collector around [`syn::Error`], **only usable inside proc-macro expansions**.
+#[derive(Debug)]
 pub struct Logr {
     /// Prefix prepended to every message, usually the attribute path (e.g. `#[edoc]`).
     pub prefix: String,
     /// Collected non-fatal errors, flushed by [`Logr::finish`].
-    #[builder(default)]
     errors: RefCell<Vec<syn::Error>>,
 }
 
 impl Logr {
+    /// Build a collector whose messages are prefixed with `prefix`.
+    #[must_use]
+    pub fn new(prefix: impl Into<String>) -> Self {
+        Self {
+            prefix: prefix.into(),
+            errors: RefCell::new(Vec::new()),
+        }
+    }
+
     fn fmt_msg<M: Display>(&self, msg: M) -> String {
         format!("#[{}] {}", self.prefix, msg)
     }
@@ -70,20 +77,20 @@ mod tests {
 
     #[test]
     fn fmt_msg_prefixes_message() {
-        let logr = Logr::builder().prefix("edoc").build();
+        let logr = Logr::new("edoc");
         assert_eq!(logr.fmt_msg("oops"), "#[edoc] oops");
     }
 
     #[test]
     fn error_carries_prefix_and_message() {
-        let logr = Logr::builder().prefix("wrap").build();
+        let logr = Logr::new("wrap");
         let err = logr.error(Span::call_site(), "bad field");
         assert_eq!(err.to_string(), "#[wrap] bad field");
     }
 
     #[test]
     fn call_site_error_is_prefixed() {
-        let logr = Logr::builder().prefix("seanum").build();
+        let logr = Logr::new("seanum");
         assert_eq!(
             logr.call_site_error("bad args").to_string(),
             "#[seanum] bad args"
@@ -92,7 +99,7 @@ mod tests {
 
     #[test]
     fn finish_appends_collected_errors() {
-        let logr = Logr::builder().prefix("edoc").build();
+        let logr = Logr::new("edoc");
         logr.emit_error(Span::call_site(), "first");
         logr.emit_error(Span::call_site(), "second");
         let rendered = logr.finish(quote! { struct Demo; }).to_string();
@@ -104,7 +111,7 @@ mod tests {
 
     #[test]
     fn has_errors_tracks_emitted_errors() {
-        let logr = Logr::builder().prefix("edoc").build();
+        let logr = Logr::new("edoc");
         assert!(!logr.has_errors());
         logr.emit_error(Span::call_site(), "oops");
         assert!(logr.has_errors());
@@ -114,7 +121,7 @@ mod tests {
 
     #[test]
     fn finish_without_errors_is_identity() {
-        let logr = Logr::builder().prefix("edoc").build();
+        let logr = Logr::new("edoc");
         let output = logr.finish(quote! { struct Demo; });
         assert_eq!(output.to_string(), "struct Demo ;");
         assert_eq!(logr.finish(quote! {}).to_string(), "");
