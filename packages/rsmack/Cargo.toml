@@ -1,0 +1,32 @@
+[package]
+name = "rsmack"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+description = "The Rust proc-macro factory: every rsmack macro behind one facade"
+
+[features]
+default = ["full"]
+# `full` pulls every macro; pick individual features to trim the dependency tree.
+full = ["edoc", "wrap", "seanum", "fs", "megamac"]
+edoc = ["dep:rsmack-edoc"]
+wrap = ["dep:rsmack-wrap"]
+seanum = ["dep:rsmack-seanum"]
+fs = ["dep:rsmack-fs"]
+megamac = ["dep:rsmack-megamac"]
+
+[dependencies]
+rsmack-edoc = { workspace = true, optional = true }
+rsmack-fs = { workspace = true, optional = true }
+rsmack-megamac = { workspace = true, optional = true }
+rsmack-seanum = { workspace = true, optional = true }
+rsmack-wrap = { workspace = true, optional = true }
+
+[lints]
+workspace = true
+
+# docs.rs builds with every feature enabled so the docs show the full API.
+[package.metadata.docs.rs]
+all-features = true
