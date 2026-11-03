@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "packages/rsmack",
     "packages/rsmack-wrap",
     "packages/rsmack-edoc",
     "packages/rsmack-utils",
@@ -12,7 +13,7 @@ members = [
 resolver = "3"
 
 [workspace.package]
-version = "0.20.0"
+version = "1.0.0"
 edition = "2024"
 license = "MIT"
 # Honest MSRV: `sea-orm 2.0` (the heaviest dependency) requires 1.94.
@@ -51,10 +52,11 @@ syn = { version = "3.0.9", default-features = false, features = [
 ] }
 trybuild = "1.0.122"
 # Internal
-rsmack-utils = { version = "0.20.0", path = "packages/rsmack-utils" }
-rsmack-megamac = { version = "0.20.0", path = "packages/rsmack-megamac" }
-rsmack-edoc = { version = "0.20.0", path = "packages/rsmack-edoc" }
-rsmack-wrap = { version = "0.20.0", path = "packages/rsmack-wrap" }
-rsmack-seanum = { version = "0.20.0", path = "packages/rsmack-seanum" }
-rsmack-fs = { version = "0.20.0", path = "packages/rsmack-fs" }
-rsmack-example-macros = { version = "0.20.0", path = "packages/rsmack-example-macros" }
+rsmack = { version = "1.0.0", path = "packages/rsmack" }
+rsmack-utils = { version = "1.0.0", path = "packages/rsmack-utils" }
+rsmack-megamac = { version = "1.0.0", path = "packages/rsmack-megamac" }
+rsmack-edoc = { version = "1.0.0", path = "packages/rsmack-edoc" }
+rsmack-wrap = { version = "1.0.0", path = "packages/rsmack-wrap" }
+rsmack-seanum = { version = "1.0.0", path = "packages/rsmack-seanum" }
+rsmack-fs = { version = "1.0.0", path = "packages/rsmack-fs" }
+rsmack-example-macros = { version = "1.0.0", path = "packages/rsmack-example-macros" }
