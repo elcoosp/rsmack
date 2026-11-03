@@ -1,38 +1,41 @@
-//! End-to-end test of the `folder_iso_struct` attribute macro.
+//! End-to-end test of the `folder_iso_struct` attribute macro (inline emission).
+//!
+//! The macro scans `$CARGO_MANIFEST_DIR/src/levels` at expansion time, so the fixture
+//! folder lives in this crate's `src/`; the mirrored module tree is declared below so
+//! the generated references resolve.
 
 use rsmack_fs::folder_iso_struct;
 
-#[folder_iso_struct(from_crate = "target/rsmack-fs-it", folder = "levels")]
-struct Levels {
-    // The macro only requires named fields; the mirrored struct is generated
-    // into `OUT_DIR` by `generate()` below.
+/// The real module tree mirrored by the generated struct.
+pub mod levels {
+    pub mod beta_gamma {
+        #[derive(Debug)]
+        pub struct BetaGamma;
+    }
+    pub mod button {
+        #[derive(Debug)]
+        pub struct Button;
+    }
+}
+
+#[folder_iso_struct(folder = "levels", vis = "pub", derives("Debug"))]
+pub struct Levels {
+    // The declared fields are a sketch only: the mirror is generated from the folder.
     #[expect(dead_code)]
     alpha: (),
 }
 
 #[test]
-fn generate_mirrors_the_folder_into_out_dir() {
-    // Prepare the folder to mirror, under `target/` (gitignored)
-    let base = rsmack_utils::fs::calling_crate_dir();
-    let levels_dir = base.join("target/rsmack-fs-it/src/levels");
-    std::fs::create_dir_all(&levels_dir).expect("create levels dir");
-    std::fs::write(levels_dir.join("alpha.rs"), "").expect("write alpha");
-    std::fs::write(levels_dir.join("beta_gamma.rs"), "").expect("write beta_gamma");
-    std::fs::write(levels_dir.join("mod.rs"), "").expect("write mod");
-
-    let out = std::env::temp_dir().join("rsmack-fs-it-out");
-    let _ = std::fs::remove_dir_all(&out);
-    std::fs::create_dir_all(&out).expect("create out dir");
-    // SAFETY: only test in this binary mutating the environment
-    unsafe { std::env::set_var("OUT_DIR", &out) };
-
-    Levels::generate();
-
-    let generated = std::fs::read_to_string(out.join("Levels.rs")).expect("read generated");
-    assert!(generated.contains("alpha : crate :: levels :: alpha :: Alpha"));
-    assert!(generated.contains("beta_gamma : crate :: levels :: beta_gamma :: BetaGamma"));
-    // mod.rs entries are skipped
-    assert!(!generated.contains("mod :"));
-
-    std::fs::remove_dir_all(&out).ok();
+fn macro_emits_the_mirrored_struct_inline() {
+    // The mirror is a real, usable struct: the fixture modules exist above.
+    let levels_mirror = Levels {
+        button: levels::button::Button,
+        beta_gamma: levels::beta_gamma::BetaGamma,
+    };
+    // mod.rs entries are skipped: no `mod` field.
+    let debug = format!("{levels_mirror:?}");
+    assert!(debug.contains("Levels"));
+    assert!(debug.contains("button"));
+    assert!(debug.contains("beta_gamma"));
+    assert!(!debug.contains("mod"));
 }
