@@ -54,8 +54,9 @@ fn run(args: Args, item: syn::ItemStruct, env: &ExecEnv) -> syn::Result<TokenStr
 
 /// Wrap the inner type of a [`syn::Field`] according to its `#[wrap(...)]` config.
 ///
-/// Unsupported field types emit a non-fatal error and are left untouched. The consumed
-/// `#[wrap(...)]` attribute is stripped so the emitted struct stays valid.
+/// Every field type can be wrapped (`Option<&'static str>`, `Box<dyn Trait>`,
+/// `Rc<fn(u8) -> bool>`, ... are all legal Rust); the consumed `#[wrap(...)]` attribute
+/// is stripped so the emitted struct stays valid.
 fn wrap_field(default_wrapper: &syn::Ident, mut f: syn::Field, env: &ExecEnv) -> syn::Field {
     let mut config = FieldArgs::default();
     f.attrs.retain_mut(|attr| {
@@ -74,35 +75,15 @@ fn wrap_field(default_wrapper: &syn::Ident, mut f: syn::Field, env: &ExecEnv) ->
             }
         }
     });
-    let ty = if config.skip {
+    if config.skip {
         return f;
-    } else {
-        f.ty
-    };
+    }
     let wrapper = config.with.unwrap_or_else(|| default_wrapper.clone());
-    f.ty = match (&config.map, &ty) {
-        // `map` replaces the inner type entirely: `with = "Vec", map = "u8"` -> `Vec<u8>`
-        (Some(inner), _) => syn::parse2(quote! { #wrapper<#inner> })
-            .expect("wrapper type tokens are always a valid type"),
-        (
-            None,
-            syn::Type::Path(_) | syn::Type::Slice(_) | syn::Type::Tuple(_) | syn::Type::Array(_),
-        ) => syn::parse2(quote! { #wrapper<#ty> })
-            .expect("wrapper type tokens are always a valid type"),
-        (None, _) => {
-            let kind = format!("{ty:?}")
-                .split(['(', ' '])
-                .next()
-                .unwrap_or_default()
-                .trim_start_matches("Type::")
-                .to_string();
-            env.logr.emit_error(
-                ty.span(),
-                format!("Field type not supported `{kind}`, cannot wrap it"),
-            );
-            ty
-        }
-    };
+    // `map` replaces the inner type entirely: `with = "Vec", map = "u8"` -> `Vec<u8>`;
+    // otherwise the field type is wrapped as-is (every type wraps legally).
+    let inner = config.map.unwrap_or_else(|| f.ty.clone());
+    f.ty = syn::parse2(quote! { #wrapper<#inner> })
+        .expect("wrapper type tokens are always a valid type");
     f
 }
 
@@ -117,7 +98,7 @@ mod tests {
     }
 
     fn env() -> ExecEnv {
-        ExecEnv::builder("rsmack_wrap::impls").build()
+        ExecEnv::new("rsmack_wrap::impls")
     }
 
     #[test]
@@ -139,24 +120,25 @@ mod tests {
         assert!(!output.contains("compile_error"));
     }
 
+    /// v2: previously "unsupported" types (references, bare fns, trait objects, raw
+    /// pointers) wrap perfectly legally — the restriction is lifted.
     #[test]
-    fn unsupported_field_type_emits_collected_error_and_keeps_field() {
-        let args = args_from(quote! { with = "Box" });
+    fn wraps_previously_unsupported_types() {
+        let args = args_from(quote! { with = "Option" });
         let item: syn::ItemStruct = syn::parse_quote! {
             struct Demo {
-                name: String,
                 reference: &'static str,
+                callback: fn(u8) -> bool,
+                object: Box<dyn Send>,
+                pointer: *const u8,
             }
         };
         let output = exec(args, item, &env()).to_string();
-        assert!(output.contains("name : Box < String >"));
-        // the unsupported field is kept as-is, with a compile_error appended
-        assert!(output.contains("reference : & 'static str"));
-        assert!(output.contains("compile_error"));
-        assert!(
-            output.contains("Field type not supported `Reference`"),
-            "unexpected output: {output}"
-        );
+        assert!(output.contains("reference : Option < & 'static str >"));
+        assert!(output.contains("callback : Option < fn (u8) -> bool >"));
+        assert!(output.contains("object : Option < Box < dyn Send > >"));
+        assert!(output.contains("pointer : Option < * const u8 >"));
+        assert!(!output.contains("compile_error"));
     }
 
     #[test]
