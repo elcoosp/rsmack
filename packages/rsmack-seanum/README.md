@@ -1,99 +1,41 @@
-# seanum Macro Documentation
+# rsmack-seanum
 
-## Overview
-
-The `seanum` procedural macro transforms a simple Rust enum into a fully-featured SeaORM
-active enum with database mapping capabilities. It automatically adds the necessary
-attributes, derives, and implementations to make the enum compatible with SeaORM's entity
-system.
-
-## Usage
-
-Apply the `#[seanum]` attribute to an enum definition with the required parameters:
-
-```rust
-use rsmack_seanum::seanum;
-
-#[seanum(rs_type = "String", db_type = "Enum")]
-pub enum SwitchAction {
-    SendEmail,
-    SendSms,
-}
-```
-
-## Parameters
-
-The `seanum` macro accepts the following parameters:
-
-- `rs_type` (Ident): The Rust type that represents the enum in the database (e.g., `"String"`, `"i32"`).
-- `db_type` (LitStr): The database type for the enum (e.g., `"Enum"`, `"Text"`). With
-  SeaORM 2, string columns require an explicit length, e.g.
-  `"String(sea_orm::sea_query::StringLen::None)"`.
-
-## Transformation
-
-When applied, the macro transforms the input enum by:
-
-1. Adding a derive macro with various traits:
-   - `Clone` - Enables cloning of the enum
-   - `Dummy` - Enables generation of fake data for testing
-   - `Debug` - Enables debug formatting
-   - `PartialEq` - Enables partial equality comparison
-   - `EnumIter` - Enables iteration over enum variants
-   - `DeriveActiveEnum` - SeaORM's derive for active enums
-   - `Eq` - Enables full equality comparison
-   - `Serialize` - Enables serialization
-   - `Deserialize` - Enables deserialization
-2. Adding a `#[sea_orm(...)]` attribute to the enum with:
-   - `rs_type` - The Rust type for the enum in the database
-   - `db_type` - The database type for the enum
-   - `enum_name` - The snake_case version of the enum name for database use
-3. Adding `#[sea_orm(string_value = "...")]` attributes to each variant with the string
-   representation of the variant name
-
-## Example
-
-### Input:
-
-```rust
-use rsmack_seanum::seanum;
-
-#[seanum(rs_type = "String", db_type = "Enum")]
-pub enum SwitchAction {
-    SendEmail,
-    SendSms,
-}
-```
-
-### Output:
+`#[seanum]` — `SeaORM` active enums with sane defaults, migrations and discriminants.
 
 ```rust,ignore
-#[derive(
-    Clone, ::fake::Dummy, Debug, PartialEq, ::sea_orm::EnumIter, ::sea_orm::DeriveActiveEnum, Eq, ::serde::Serialize, ::serde::Deserialize, Hash
+use rsmack_seanum::seanum;
+
+#[seanum(
+    rs_type = "String",
+    db_type = "String(sea_orm::sea_query::StringLen::None)",
+    derives("::serde::Serialize", "::serde::Deserialize")
 )]
-#[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "switch_action")]
+#[derive(Default)]
 pub enum SwitchAction {
-    #[sea_orm(string_value = "SendEmail")]
+    #[default]
+    #[seanum(rename = "send_email")]
     SendEmail,
-    #[sea_orm(string_value = "SendSms")]
     SendSms,
 }
 ```
 
-## Notes
+The enum name is snake-cased for `enum_name` (overridable with `enum_name = "..."`),
+each variant gets its `string_value` (overridable per variant with `#[seanum(rename =
+"...")]`, or case-normalized fleet-wide with `rename_all = "camelCase"` | `"snake_case"`
+| `"kebab-case"` | `"PascalCase"` | `"SCREAMING_SNAKE_CASE"` | `"lowercase"` |
+`"UPPERCASE"`).
 
-- The macro converts the enum name to snake_case for the database name (e.g.,
-  `SwitchAction` becomes `switch_action`)
-- Each variant is mapped to its string representation in the database
-- The generated enum is fully compatible with SeaORM's entity system and can be used in
-  database operations
-- The macro requires the `megamac` framework for proper execution
+**Minimal default derives**: `Clone, Debug, PartialEq, Eq, Hash, EnumIter,
+DeriveActiveEnum` — nothing else, so no hidden `serde`/`fake` dependency. Anything else
+is opt-in via `derives(...)`.
 
-## Dependencies
+**Integer primary keys**: with an integer `rs_type` (`"i32"`, `"u8"`, ...) the macro adds
+`#[repr(...)]`, per-variant `#[sea_orm(num_value = N)]` and a value-based
+`TryFrom<rs_type>`. Explicit discriminants are honored (`A = 10, B` continues from 11);
+duplicates are reported.
 
-This macro requires the following dependencies in consumer crates:
+**Migrations**: `migration = true` generates a `SwitchAction::migration_column_def()`
+helper (requires the [`sea-orm-migration`](https://docs.rs/sea-orm-migration) dependency)
+returning a ready `ColumnDef` for the enum's column.
 
-- `sea-orm` - For the `DeriveActiveEnum` trait and related attributes
-- `serde` - For serialization and deserialization
-- `fake` - For generating fake data in tests
-- `sea-orm-migration` - Optionally, for database migration support
+See the [workspace README](https://github.com/elcoosp/rsmack) for the full documentation.
