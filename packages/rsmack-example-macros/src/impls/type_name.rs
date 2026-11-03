@@ -1,13 +1,10 @@
 //! Derive macro: implements a `TypeName` trait returning the type name.
+//!
+//! v2: derive macros receive no payload, so there is no `Args` struct and no
+//! `# Parameters` section — the derive needs only the `exec` function.
 
 use proc_macro2::TokenStream;
 use rsmack_utils::megamac::ExecEnv;
-
-/// Type-name configuration (currently empty)
-// Never constructed: derive macros receive no attribute meta, but `megamac` still reads
-// this documented `Args` struct to generate the `# Parameters` doc section.
-#[expect(dead_code)]
-pub struct Args {}
 
 pub fn exec(item: syn::DeriveInput, env: &ExecEnv) -> TokenStream {
     let ident = item.ident;
