@@ -23,7 +23,7 @@ fn args_from(tokens: proc_macro2::TokenStream) -> wrap::Args {
 }
 
 fn bench_small_struct(c: &mut Criterion) {
-    let env = ExecEnv::builder("rsmack_wrap::impls").build();
+    let env = ExecEnv::new("rsmack_wrap::impls");
     c.bench_function("wrap/exec_4_fields", |b| {
         b.iter(|| {
             let item: syn::ItemStruct = syn::parse_quote! {
@@ -40,7 +40,7 @@ fn bench_small_struct(c: &mut Criterion) {
 }
 
 fn bench_large_struct(c: &mut Criterion) {
-    let env = ExecEnv::builder("rsmack_wrap::impls").build();
+    let env = ExecEnv::new("rsmack_wrap::impls");
     c.bench_function("wrap/exec_24_fields", |b| {
         b.iter(|| {
             let item: syn::ItemStruct = syn::parse_quote! {
