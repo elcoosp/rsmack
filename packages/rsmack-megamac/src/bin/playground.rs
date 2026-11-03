@@ -44,7 +44,7 @@ fn expand(
         arguments: args.map(ident).transpose()?,
         doc: doc.map(ident).transpose()?,
     };
-    let env = ExecEnv::builder(format!("playground::{name}")).build();
+    let env = ExecEnv::new(format!("playground::{name}"));
     match megamac::run(&args, &env, src_folder) {
         Ok(tokens) => Ok(tokens.to_string()),
         Err(error) => Err(error.to_string()),
