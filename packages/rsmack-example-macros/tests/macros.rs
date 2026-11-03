@@ -2,12 +2,21 @@
 
 use rsmack_example_macros::{TypeName, make_public};
 
-// Function-like macro generated with `megamac!(kind = Func, ...)`
+// Function-like macro generated with `megamac!(kind = Func, ...)` (darling payload)
 rsmack_example_macros::greeting!(who = "integration tests");
 
 #[test]
 fn func_macro_expands() {
     assert_eq!(GREETING, "Hello integration tests!");
+}
+
+// Function-like macro generated in **raw payload** mode
+// (`exec(input: TokenStream, env)` signature)
+rsmack_example_macros::shout!(hello megamac);
+
+#[test]
+fn func_raw_macro_expands() {
+    assert_eq!(SHOUTED, "HELLO MEGAMAC");
 }
 
 // Attribute macro generated with `megamac!(kind = Attr, ...)`
