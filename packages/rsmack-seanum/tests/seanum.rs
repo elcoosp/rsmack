@@ -2,9 +2,23 @@
 
 use rsmack_seanum::seanum;
 
+/// Minimal default derives: no hidden `serde`/`fake` requirement.
 #[seanum(
     rs_type = "String",
     db_type = "String(sea_orm::sea_query::StringLen::None)"
+)]
+#[derive(Default)]
+enum SwitchState {
+    #[default]
+    Off,
+    On,
+}
+
+/// Extra derives (serde) are opt-in via `derives(...)`.
+#[seanum(
+    rs_type = "String",
+    db_type = "String(sea_orm::sea_query::StringLen::None)",
+    derives("::serde::Serialize", "::serde::Deserialize")
 )]
 #[derive(Default)]
 enum UserStatus {
@@ -47,4 +61,8 @@ fn generated_derives_are_usable() {
     let cloned = UserStatus::Suspended.clone();
     assert_eq!(cloned, UserStatus::Suspended);
     assert_eq!(format!("{cloned:?}"), "Suspended");
+    // The defaults-only enum works without serde/fake in scope.
+    let state = SwitchState::default();
+    assert_eq!(state, SwitchState::Off);
+    assert_eq!(format!("{state:?}"), "Off");
 }
