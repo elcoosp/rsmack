@@ -65,7 +65,7 @@ jobs:
         run: git-cliff --output CHANGELOG.md
 
       - name: Upload changelog artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: changelog
           path: |
@@ -100,7 +100,7 @@ jobs:
           fetch-depth: 0
 
       - name: Download changelog artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: changelog
 
