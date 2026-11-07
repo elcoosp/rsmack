@@ -1,0 +1,86 @@
+---
+title: Document from constants (edoc)
+description: Generate field, variant, and item docs from string literals, constant references, and const expressions with edoc.
+type: how-to
+---
+
+import { Aside, LinkCard, Steps } from '@astrojs/starlight/components';
+
+Use [`edoc`](/reference/edoc/) when documentation must stay in sync with code: version strings from constants, build numbers from `env!`, or combined tags from `concat!`. `edoc` evaluates `#[edoc((...))]` tuples into real `#[doc]` attributes on struct fields, enum variants, and the item itself.
+
+## Point edoc at your constants file
+
+The `from` argument names the module path that maps to a file under your crate's `src/` directory — `::` becomes `/` and `.rs` is appended:
+
+```rust
+#[edoc(from = consts)]          // reads src/consts.rs
+#[edoc(from = impls::doc_consts)] // reads src/impls/doc_consts.rs
+```
+
+`self` is not handled as a path segment — write the path relative to `src/` without it.
+
+## Evaluate tuples of elements
+
+Annotate fields or variants with a tuple of elements. Each element is a string literal, a constant reference, or a const expression:
+
+```rust
+use rsmack_edoc::edoc;
+
+#[edoc(from = consts)]
+struct Client {
+    #[edoc(("Client ", APP, " tag ", TAG, " build ", 2 * 21))]
+    name: String,
+}
+```
+
+Supported element kinds include:
+
+- Literals: `&str`, integers, `f64`, `bool`, `char`, and byte strings
+- Arithmetic, bitwise, shift, logic, and comparison operators
+- Casts with rustc semantics (`300 as u8` wraps to `44`, float-to-int saturates)
+- The macros `concat!`, `env!`, and `option_env!`
+
+## Reference constants by full path or bare name
+
+A reference resolves against the full module path first. A bare name falls back to a workspace-wide search — unique names resolve, ambiguous names report every candidate:
+
+```rust
+#[edoc(("Qualified: ", impls::doc_consts::APP))]
+#[edoc(("Bare: ", APP))] // resolves when APP is unique in the file
+```
+
+Ambiguity produces `Ambiguous const 'NAME', qualify the path: 'a::NAME', 'b::NAME'` — see the [error message reference](/reference/error-messages/).
+
+## Document enum variants and the item itself
+
+Variant tuples work like field tuples. For the item itself, add a separate `#[edoc((...))]` attribute next to `from`:
+
+```rust
+#[edoc(from = consts)]
+#[edoc(("The ", APP, " client"))]
+enum State {
+    #[edoc(("Idle since ", TAG))]
+    Idle,
+    Busy,
+}
+```
+
+<Aside kind="note">
+	Pre-existing doc comments on annotated items are overwritten by the generated docs; attributes such as `#[derive(...)]` and `#[serde(...)]` are preserved.
+</Aside>
+
+## Keep one constants file per crate
+
+Resolution is memoized per file with a process-global cache keyed by `(path, mtime, len)`. Annotating N items against one `src/consts.rs` costs one parse; every use of the cached file re-emits any non-fatal issues it contains, so nothing hides.
+
+## Verify the result
+
+```shell
+cargo doc --no-deps --open
+```
+
+Every evaluated tuple appears as rendered text on the field, variant, or item page.
+
+## Next steps
+
+<LinkCard title="edoc reference" description="The complete expression grammar, resolution rules, and error table." href="/reference/edoc/" />
