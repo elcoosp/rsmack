@@ -1,0 +1,78 @@
+---
+title: rsmack-utils reference
+description: Complete reference for rsmack-utils — ExecEnv, Logr, the five entrypoint drivers, filesystem helpers, and the exported macros.
+type: reference
+---
+
+import { Badge, LinkCard } from '@astrojs/starlight/components';
+
+`rsmack-utils` is the toolkit every macro in the workspace builds on: the `ExecEnv`/`Logr` diagnostics pair, five reusable entrypoint drivers, memoized filesystem helpers, and two exported `macro_rules!` helpers. It compiles without syn's `full` feature; only crates that parse full items opt in.
+
+## ExecEnv
+
+The per-expansion environment handed to every `exec` function.
+
+| Member | Signature | Description |
+| --- | --- | --- |
+| `prefix` | `pub prefix: String` | Diagnostic prefix, rendered `#[<prefix>] <message>` |
+| `logr` | `pub logr: Logr` | The diagnostics collector owned by this expansion |
+| `new` | `new(prefix: impl Into<String>) -> Self` | Plain constructor |
+| `finish` | `finish(&self, output: TokenStream) -> TokenStream` | Appends all collected errors as `compile_error!` tokens and returns the output |
+| `finish_result` | `finish_result(&self, result: syn::Result<TokenStream>) -> TokenStream` | Renders `Ok` as-is, or appends the error and flushes — the canonical idiom is `env.finish_result(run(args, item, env))` |
+
+## Logr
+
+The diagnostics collector. Lives for one proc-macro expansion; there is no panic path anywhere.
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `new` | `new(prefix: impl Into<String>) -> Self` | Create a collector with a `#[<prefix>]` message prefix |
+| `error` | `error(&self, span: Span, msg: M) -> syn::Error` (`#[must_use]`) | Build a fatal error for `?`-style returns |
+| `call_site_error` | `call_site_error(&self, msg: M) -> syn::Error` | Fatal error spanning the whole invocation |
+| `emit_error` | `emit_error(&self, span: Span, msg: M)` | Collect a non-fatal error; flush happens in `finish` |
+| `has_errors` | `has_errors(&self) -> bool` | Whether any non-fatal error was collected |
+| `finish` | `finish(&self, output: TokenStream) -> TokenStream` | Flush collected errors as `compile_error!` tokens appended to the output |
+
+## Entrypoint drivers
+
+Five generic drivers in `rsmack_utils::exec`; generated code routes through them.
+
+| Driver | Shape |
+| --- | --- |
+| `attr_entrypoint` | `(meta, item, prefix, exec)` — darling meta, parsed item |
+| `attr_raw_entrypoint` | `(meta, item, prefix, exec)` — darling meta, raw payload, parsed item |
+| `func_entrypoint` | `(meta, prefix, exec)` — darling meta |
+| `func_raw_entrypoint` | `(input, prefix, exec)` — raw payload |
+| `derive_entrypoint` | `(item, prefix, exec)` — derive input, no payload |
+
+Empty attribute meta parses as an empty list, so bare `#[my_macro]` works with all-default args. Every parse failure becomes a prefixed `compile_error!`.
+
+## Filesystem helpers
+
+Helpers in `rsmack_utils::fs`, shared by the macros and available for your own build scripts.
+
+| Item | Description |
+| --- | --- |
+| `staleness_key(path) -> Option<(SystemTime, u64)>` | The `(mtime, len)` cache key both memo caches validate against |
+| `calling_crate_dir() -> &'static Path` | Memoized walk up from `OUT_DIR` to the nearest `Cargo.toml`; requires a build script to exist so `OUT_DIR` is set |
+| `package_src_folder() -> PathBuf` | `$CARGO_MANIFEST_DIR/src` |
+| `scan_modules(folder, recursive) -> Result<ModuleTree, String>` | Deterministic folder scan that skips `mod.rs` |
+| `ModuleTree` | `{ fields: Vec<ModuleField>, dirs: Vec<(Ident, ModuleTree)> }` with a `render(...)` method that emits the mirrored code |
+| `ModuleField` | `{ mod_ident, ty_ident }` — snake_case field ident and PascalCase type ident |
+| `folder_iso_struct()` | bon builder for the **build-script flavor**: `.name(...)`, `.pre(&TokenStream)`, `.from_crate(...)`, `.folder(...)`, `.vis("pub")`, `.recursive(false)`, `.log_enabled(false)`, `.call()` — writes `<name>.rs` into `OUT_DIR` |
+| `parse_id_maybe_raw(s) -> Ident` | Parses keywords as raw idents |
+| `generate_file(path, bytes)` | Writes a file into `OUT_DIR` |
+
+## Exported macros
+
+### impl_json_schema!
+
+`impl_json_schema!(UserId, "string")` implements `schemars::JsonSchema` with a plain `{"type": "string"}` schema.
+
+### cl!
+
+The code-link helper for doc comments: `cl!(syn::Error)` renders `` [`syn::Error`] ``, `cl!(syn::Error!)` renders `` [`syn::Error!`] ``, and `cl!(Debug)` renders `Debug`.
+
+## Next steps
+
+<LinkCard title="Handle macro errors" description="Fatal and collected diagnostics in practice." href="/guides/handle-errors/" />
