@@ -1,0 +1,28 @@
+# rsmack
+
+> The Rust proc-macro factory: write the exec function, get a documented macro.
+> edoc, wrap, seanum, folder_iso_struct, and megamac in one dependency.
+
+Routes are relative to the site root. Rendered pages are plain HTML.
+- [rsmack — the Rust proc-macro factory | rsmack](//): Write the exec function, get a documented macro. edoc, wrap, seanum, folder_iso_struct, and megamac in one dependency.
+- [Architecture | rsmack](/explanation/architecture/): How the rsmack workspace is organized — the facade crate, five generated macros, the megamac factory, and the rsmack-utils toolkit.
+- [Diagnostics philosophy | rsmack](/explanation/diagnostics-philosophy/): Why rsmack macros never panic — the syn::Error-based Logr design, the style guide, fuzzing, and trybuild snapshots.
+- [The payload protocol | rsmack](/explanation/payload-protocol/): Why a megamac macro's exec signature is its configuration — darling versus raw payloads, derive macros, and inference rules.
+- [Performance | rsmack](/explanation/performance/): How rsmack stays fast — typed const evaluation, process-global memoization, feature-gated syn, and the 90x megamac memoization win.
+- [Roadmap | rsmack](/explanation/roadmap/): What rsmack 1.0 shipped, what the v2 redesign deliberately broke, and what remains on the improvement backlog.
+- [Document from constants (edoc) | rsmack](/guides/docs-from-constants/): Generate field, variant, and item docs from string literals, constant references, and const expressions with edoc.
+- [Handle macro errors | rsmack](/guides/handle-errors/): Report fatal and collected diagnostics from your megamac macros with ExecEnv, finish_result, and Logr — never panic.
+- [Mirror a folder | rsmack](/guides/mirror-a-folder/): Mirror a folder of Rust modules into a struct inline at compile time with folder_iso_struct — no build script.
+- [Preview with the playground | rsmack](/guides/preview-with-playground/): Print the expansion a megamac call would emit — without compiling anything — with the rsmack-megamac playground binary.
+- [SeaORM enums (seanum) | rsmack](/guides/seaorm-enums/): Generate SeaORM active enums with minimal default derives, explicit integer discriminants, rename_all, and a migration helper.
+- [Wrap field types | rsmack](/guides/wrap-field-types/): Wrap every field of a named struct in Option, Box, Vec, or any generic type, with per-field skip, with, and map control.
+- [Write your own macro | rsmack](/guides/write-your-own-macro/): Ship a documented function-like, attribute, or derive macro in a dozen lines with megamac — payload protocol included.
+- [Benchmarks reference | rsmack](/reference/benchmarks/): Criterion expansion benchmarks for every macro, with the 90x megamac memoization win and the repro commands.
+- [edoc reference | rsmack](/reference/edoc/): Complete reference for the edoc attribute macro — attribute syntax, const-expression grammar, resolution, caching, and errors.
+- [Error messages reference | rsmack](/reference/error-messages/): Every rustc diagnostic the shipped macros emit, with the
+- [folder_iso_struct reference | rsmack](/reference/folder-iso-struct/): Complete reference for the folder_iso_struct attribute macro — options, scanning rules, carry-over behavior, and errors.
+- [megamac reference | rsmack](/reference/megamac/): Complete reference for the megamac macro factory — invocation grammar, signature-driven payload protocol, doc generation, caching, and the playground.
+- [rsmack-utils reference | rsmack](/reference/rsmack-utils/): Complete reference for rsmack-utils — ExecEnv, Logr, the five entrypoint drivers, filesystem helpers, and the exported macros.
+- [seanum reference | rsmack](/reference/seanum/): Complete reference for the seanum attribute macro — options, default derives, integer discriminants, rename_all cases, and the migration helper.
+- [wrap reference | rsmack](/reference/wrap/): Complete reference for the wrap attribute macro — item options, per-field options, supported types, and constraints.
+- [Getting started | rsmack](/tutorials/getting-started/): Install rsmack, document a struct from constants with edoc, and wrap its fields with wrap — in one pass through the golden path.
