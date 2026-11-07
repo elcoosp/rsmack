@@ -1,0 +1,49 @@
+---
+title: Error messages reference
+description: Every rustc diagnostic the shipped macros emit, with the #[crate::macro] prefix format and the snapshot-tested catalogue.
+type: reference
+---
+
+import { LinkCard } from '@astrojs/starlight/components';
+
+Every diagnostic from an rsmack macro is a `compile_error!` — never a panic. The message style is enforced by `trybuild` snapshots in `packages/rsmack-ui-tests`, so an accidental wording change fails review.
+
+## Message format
+
+```text
+error: #[<crate>::<macro>] <message>
+```
+
+Real prefixes: `#[rsmack_edoc::edoc]`, `#[rsmack_wrap::wrap]`, `#[rsmack_seanum::seanum]`, `#[rsmack_fs::folder_iso_struct]`, `#[rsmack_megamac::megamac]`. Spans point at the offending tokens, or at the whole invocation for call-site fatals.
+
+## Message style rules
+
+1. Start with the failure — no `Error:` decoration, no emoji.
+2. Consistent verbs: ``Failed to <verb> ...`` for read/parse failures, ``Only <thing> supported`` for constraints, ``Unsupported <thing> `<value>` `` for unknown variants, ``Invalid <thing> ...`` for value-construction problems.
+3. Backtick identifiers, paths, and values; never quote whole sentences.
+4. No trailing period, following rustc convention.
+5. Fatal when expansion is meaningless (returned through `ExecEnv::finish_result`); collected when usable output still exists (flushed by `Logr::finish`) so all problems of one item report in one pass.
+
+## Catalogue
+
+Snapshot-tested diagnostics from `packages/rsmack-ui-tests`:
+
+| Macro | Message after the prefix | Trigger |
+| --- | --- | --- |
+| `edoc` | ``Failed to read constants file <path>: No such file or directory (os error 2)`` | `from` points at a missing file |
+| `edoc` | ``Unresolved const ident `NOPE` `` | Reference matches nothing |
+| `edoc` | `Only Tuple supported, maybe you are missing a second element` | Payload is not a tuple |
+| `edoc` | ``Unsupported const macro `vec!` `` | Element uses an unsupported macro |
+| `edoc` | ``Ambiguous const `NAME`, qualify the path: `a::NAME`, `b::NAME` `` | Bare name matches several consts |
+| `megamac` | ``Failed to get macro_impl_src of does_not_exist at <path>: No such file or directory (os error 2)`` | Missing `impls/<name>.rs` |
+| `megamac` | ``Failed to parse macro_impl_src broken, this may happen for no real reason in your IDE, check that your project still builds with cargo: <debug>`` | Unparsable impl file |
+| `megamac` | ``Unsupported MacroKind `Nope`, expected `Attr`, `Func` or `Derive` `` | Invalid `kind` |
+| `wrap` | `Only named struct supported` | Tuple or unit struct |
+| `folder_iso_struct` | `Only named struct supported` | Tuple or unit struct |
+| `seanum` | ``Failed to generate TryFrom: variant `Plain` has fields, only unit variants are supported with integer `rs_type` `` | Non-unit variant with integer `rs_type` |
+
+Further collected (non-snapshotted) messages follow the same verbs — for example ``Cyclic const dependency involving `X` ``, ``Duplicate variant value `N`: discriminants must be unique for the generated `TryFrom` ``, and ``Failed to generate the migration helper: db_type `X` has no `ColumnDef` mapping``.
+
+## Next steps
+
+<LinkCard title="Handle macro errors" description="Write diagnostics in this style for your own megamac macros." href="/guides/handle-errors/" />
