@@ -1,0 +1,50 @@
+---
+title: Benchmarks reference
+description: Criterion expansion benchmarks for every macro, with the 90x megamac memoization win and the repro commands.
+type: reference
+---
+
+import { Aside, LinkCard } from '@astrojs/starlight/components';
+
+Expansion benchmarks run with [criterion](https://github.com/bheisler/criterion.rs) 0.8.2 (mean of 100 samples, Rust 1.99, `ubuntu-latest`-class runners). Reproduce with:
+
+```shell
+cargo bench --workspace
+```
+
+## Results
+
+| Benchmark | Mean | Notes |
+| --- | --- | --- |
+| `utils/exec_env_build` | 37 ns | `ExecEnv::new` |
+| `utils/finish_result_ok` | 161 ns | driver happy-path overhead |
+| `utils/logr_collect_4_errors` | 4.1 µs | collect 4 diagnostics + flush |
+| `edoc/const_eval_expression` | 4.6 µs | typed eval of `concat!("v", 1 + 2, "-", 3 * 4)` |
+| `edoc/consts_parse_and_eval` | 28 µs | cold constants-file parse + eval |
+| `edoc/exec_missing_consts_file` | 27 µs | error path |
+| `edoc/exec_warm_consts_cache` | 63 µs | full 8-field expansion, memoized consts |
+| `wrap/exec_4_fields` | 18 µs | |
+| `wrap/exec_24_fields` | 73 µs | roughly 3 µs per field, linear |
+| `seanum/exec_8_variants_string` | 23 µs | |
+| `seanum/exec_8_variants_integer_migration` | 55 µs | includes `TryFrom` + migration helper |
+| `megamac/exec_func_generation` | 15 µs | warm, cached impl analysis |
+| `megamac/exec_attr_generation` | 18 µs | warm, cached impl analysis |
+
+## What the numbers buy you
+
+- **The memoization win:** the 0.20 reference run measured `megamac/exec_*_generation` at about 1.35 ms per expansion. The impl-file memo brings warm expansions to 15–18 µs — roughly a **90× improvement**, most visible in rust-analyzer re-checks and test loops.
+- **Shared constants files:** memoized consts save `N × 28 µs` for N structs annotating against one `src/consts.rs`.
+- **Diagnostics are effectively free:** about 160 ns of driver overhead plus roughly 4 µs to collect and flush four errors.
+
+<Aside kind="tip" title="Faster iteration in your own crate">
+	Proc-macro recompiles get quicker when dependencies are pre-optimized. Drop this in your `Cargo.toml`:
+
+	```toml
+	[profile.dev.package."*"]
+	opt-level = 3
+	```
+</Aside>
+
+## Next steps
+
+<LinkCard title="Performance" description="Why the caches and the typed evaluator are fast." href="/explanation/performance/" />
