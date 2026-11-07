@@ -1,0 +1,14 @@
+{
+        "config": {
+                "MD013": false,
+                "MD033": false,
+                "MD041": false,
+                "MD010": false,
+                "MD024": { "siblings_only": true },
+        "MD026": { "punctuation": ".,;:" },
+                "MD025": false,
+                "MD046": false,
+                "MD036": false
+        },
+        "ignores": ["node_modules", "dist", ".astro", ".qa"]
+}
