@@ -1,0 +1,72 @@
+---
+title: Mirror a folder
+description: Mirror a folder of Rust modules into a struct inline at compile time with folder_iso_struct — no build script.
+type: how-to
+---
+
+import { Aside, FileTree, LinkCard } from '@astrojs/starlight/components';
+
+Use [`folder_iso_struct`](/reference/folder-iso-struct/) when a struct must mirror a folder of modules: game levels, screen definitions, plugin registries. The folder is scanned at macro-expansion time and the mirrored struct is emitted inline — one attribute, zero build scripts, nothing in `OUT_DIR`.
+
+## Declare the struct and the folder
+
+Start from a folder of modules that your crate already declares:
+
+<FileTree>
+	- src
+		- levels
+			- mod.rs
+			- button.rs
+			- beta_gamma.rs
+		- main.rs
+</FileTree>
+
+```rust
+// src/main.rs
+mod levels;
+
+use rsmack_fs::folder_iso_struct;
+
+#[folder_iso_struct(folder = "levels", vis = "pub", derives("Debug"))]
+pub struct Levels {
+    // The declared fields are a sketch only: the mirror is generated from the folder.
+    #[expect(dead_code)]
+    alpha: (),
+}
+```
+
+The macro scans `src/levels/`, skips `mod.rs`, and generates one field per file stem. `button.rs` becomes a field `button` of type `crate::levels::button::Button`; `beta_gamma.rs` becomes `beta_gamma: crate::levels::beta_gamma::BetaGamma`. The field names are snake_case and the type names are PascalCase conversions of the stem.
+
+<Aside kind="note" title="The modules must exist in your crate">
+	Generated fields reference `crate::levels::button::Button`, so the folder must be part of your module tree — declare `mod levels;` as usual.
+</Aside>
+
+## Go recursive for subdirectories
+
+With `recursive = true`, each subdirectory becomes an inline `pub mod <name>` holding its own mirrored struct, named after the PascalCase of the directory:
+
+<FileTree>
+	- src
+		- ui
+			- mod.rs
+			- screens
+				- login.rs
+				- settings.rs
+</FileTree>
+
+```rust
+#[folder_iso_struct(folder = "ui/screens", recursive = true, derives("Debug"))]
+pub struct Screens {}
+```
+
+## What carries over
+
+- The annotated struct's attributes and visibility are copied onto every generated struct.
+- `derives("Debug", ...)` injects extra derives on every generated struct.
+- The declared fields are discarded — the folder is the source of truth.
+- Tuple structs report `Only named struct supported`.
+
+## Next steps
+
+<LinkCard title="folder_iso_struct reference" description="Every option, the scanning rules, and the fatal errors." href="/reference/folder-iso-struct/" />
+<LinkCard title="Write your own macro" description="Build a macro like this in a dozen lines with megamac." href="/guides/write-your-own-macro/" />
