@@ -1,0 +1,24 @@
+/*
+ * rsmack brand accent, derived from the logo's Ferris-orange gradient
+ * (#E73102 -> #FD7E09 on charcoal #191A1F).
+ *
+ * Contrast (WCAG relative luminance, verified in scripts/brand_assets.py):
+ *   light accent-high on white            8.16:1  (AA text)
+ *   light accent-high on light accent-low 7.31:1  (AA text)
+ *   light accent on white                 4.44:1  (UI)
+ *   dark  accent-high on dark base       13.84:1  (AA text)
+ *   dark  accent-high on dark accent-low 11.96:1  (AA text)
+ *   dark  accent on dark base              5.96:1  (UI)
+ */
+
+:root {
+	--sl-color-accent-low: hsl(14 100% 96%);
+	--sl-color-accent: hsl(14 94% 45%);
+	--sl-color-accent-high: hsl(13 100% 30%);
+}
+
+[data-theme='dark'] {
+	--sl-color-accent-low: hsl(14 55% 14%);
+	--sl-color-accent: hsl(16 100% 56%);
+	--sl-color-accent-high: hsl(20 100% 88%);
+}
