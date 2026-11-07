@@ -1,0 +1,41 @@
+---
+title: Roadmap
+description: What rsmack 1.0 shipped, what the v2 redesign deliberately broke, and what remains on the improvement backlog.
+type: explanation
+---
+
+import { LinkCard, Badge } from '@astrojs/starlight/components';
+
+The 1.0.0 release closed the v2 redesign recorded in `docs/DESIGN_v2.md`: *"any Rust developer authors a production-grade, fully documented, panic-free proc macro in under twenty lines, and installs every shipped macro with one `cargo add rsmack`."* This page summarizes what shipped and what the repository tracks as remaining work in `docs/IMPROVEMENTS.md`.
+
+## Shipped in 1.0.0
+
+- Signature-driven payload protocol with the `doc = "none"` option and richer generated docs
+- The `rsmack` facade crate
+- `megamac` impl-file caching with the roughly 90× warm-expansion win
+- `edoc` typed const evaluation, path-aware constants, enum-variant and item-level docs
+- `wrap` accepting every type (the v1 unsupported-type error path was deleted)
+- `seanum` minimal default derives, explicit discriminants with duplicate detection, `rename_all`, `enum_name`
+- `folder_iso_struct` inline emission — no build-script flavor in the macro itself
+- `ExecEnv::new` replacing the bon builder, shared `staleness_key`
+
+<Badge variant="caution" text="No backward compatibility" /> The v2 redesign deliberately broke the 0.x API surface: signature changes, derive payload removal, and the `ExecEnv::new` constructor are all recorded in the 1.0.0 changelog.
+
+## Remaining backlog
+
+| Area | Item | Impact | Effort |
+| --- | --- | --- | --- |
+| Performance | Cache megamac impl-file **source** reads | Low | Low |
+| Performance | Precompute `pascal_options` per process | Low | Low |
+| Modularity | Split `rsmack-utils` by concern | Medium | Medium |
+| Fuzzing | Scheduled fuzzing in CI | Medium | Medium |
+| `edoc` | Richer const evaluation — structs, `include!` | Low | High |
+| `seanum` | Const-expression discriminants | Low | Medium |
+| `megamac` | Playground expansion of macro **invocations** (needs cargo-expand) | Medium | High |
+| `folder_iso_struct` | Per-nested-struct derives | Low | Low |
+
+The utils split is deferred because generated code embeds `rsmack_utils::` paths — a physical split would break every published crate at once.
+
+## Next steps
+
+<LinkCard title="Architecture" description="How the workspace crates layer onto each other." href="/explanation/architecture/" />
