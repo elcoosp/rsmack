@@ -1,0 +1,36 @@
+---
+title: Performance
+description: How rsmack stays fast — typed const evaluation, process-global memoization, feature-gated syn, and the 90x megamac memoization win.
+type: explanation
+---
+
+import { Aside, LinkCard } from '@astrojs/starlight/components';
+
+Proc macros sit on the compile critical path: every keystroke in an editor re-expands them. The rsmack design treats expansion cost as a first-class constraint.
+
+## Typed const evaluation
+
+`edoc` evaluates constant expressions with machine-typed values — `i128`, `f64`, `bool`, byte strings — and converts to a string once, at doc assembly. There are no per-operation string round-trips, which is why a typed evaluation such as `concat!("v", 1 + 2, "-", 3 * 4)` costs 4.6 µs end to end.
+
+## Process-global caches
+
+Two memoization layers share the same staleness discipline — a `(path, mtime, len)` key that re-parses a file only after it actually changed:
+
+- **Constants files** (`edoc`): N annotated items against one `src/consts.rs` cost one parse; warm expansions against the cached file run at 63 µs for a full 8-field struct.
+- **Impl files** (`megamac`): the `impls/<name>.rs` analysis (payload protocol, args fields, intro docs) is cached per `(path, mtime, len, kind, args_override)`. Warm macro generation measures **15–18 µs, down from about 1.35 ms** — a roughly 90× improvement that pays off most in rust-analyzer re-expansions and test loops.
+
+## Feature-gated syn
+
+`rsmack-utils` compiles against `syn` without the `full` feature. Only the crates that genuinely parse full items — structs, enums, whole files — opt in, so the toolkit's compile-time weight stays at the default feature set.
+
+## Diagnostics overhead
+
+The collector adds about 160 ns on the happy path (`finish_result` around a valid expansion) and roughly 4 µs to collect and flush four errors. Error handling is effectively free, which is what makes the collect-everything UX affordable.
+
+<Aside kind="tip" title="Measure it yourself">
+        Exact numbers and the repro command live in the [benchmarks reference](/reference/benchmarks/): `cargo bench --workspace`.
+</Aside>
+
+## Next steps
+
+<LinkCard title="Benchmarks reference" description="Every criterion measurement with notes." href="/reference/benchmarks/" />
