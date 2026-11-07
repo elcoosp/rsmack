@@ -1,0 +1,39 @@
+---
+title: The payload protocol
+description: Why a megamac macro's exec signature is its configuration — darling versus raw payloads, derive macros, and inference rules.
+type: explanation
+---
+
+import { LinkCard } from '@astrojs/starlight/components';
+
+Most macro frameworks ask you to declare the payload shape twice: once in a configuration struct and once in the code that parses it. `megamac` derives everything from the `exec` signature — the signature *is* the configuration.
+
+## How inference works
+
+At expansion time, `megamac!` locates `exec` in `src/impls/<name>.rs`, strips the trailing `&ExecEnv` parameter, and counts what remains. The last path segment of each parameter's type drives the decision, so `proc_macro2::TokenStream` and a re-exported `TokenStream` are recognized equally.
+
+| Remaining parameters | Protocol | Entry point generated |
+| --- | --- | --- |
+| `args: Args` | darling meta parsing, docs extracted from `Args` | `func_entrypoint` |
+| `input: TokenStream` | raw payload for DSL macros | `func_raw_entrypoint` |
+| `args: Args, item: syn::Item` | darling meta plus parsed item | `attr_entrypoint` |
+| `input: TokenStream, item: syn::Item` | raw payload plus parsed item | `attr_raw_entrypoint` |
+| `item: syn::DeriveInput` | derive — no payload, no `# Parameters` docs | `derive_entrypoint` |
+
+The parsed item type for attribute macros stays signature-inferred: annotate the item with whatever type you accept, and the generated entrypoint parses it for you.
+
+## Why darling by default
+
+Darling-parsed payloads give macro users named arguments (`greeting!(who = "world")`) and give macro authors self-documenting configuration: the `Args` struct's doc comments become the generated macro's `# Parameters` section, and `Option<T>` or `#[darling(default)]` fields are automatically marked *(optional)*. The documentation cannot drift from the behavior because both come from the same source.
+
+## Why raw payloads exist
+
+DSL macros — `shout!(hello megamac)` — take token soup, not named arguments. Changing the signature to `exec(input: TokenStream, env: &ExecEnv)` selects the raw driver; there is nothing else to configure. The one fatal overlap: declaring `args = "MyArgs"` while the signature takes a raw `TokenStream` is rejected, because the two settings contradict each other.
+
+## Derives have no payload
+
+`kind = Derive` generates a derive macro named after the PascalCase of `name` — `type_name` produces `#[derive(TypeName)]`. Derives receive the `DeriveInput` and document no parameters.
+
+## Next steps
+
+<LinkCard title="megamac reference" description="The invocation grammar and doc-generation rules." href="/reference/megamac/" />
