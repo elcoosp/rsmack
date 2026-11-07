@@ -1,0 +1,42 @@
+---
+title: Diagnostics philosophy
+description: Why rsmack macros never panic — the syn::Error-based Logr design, the style guide, fuzzing, and trybuild snapshots.
+type: explanation
+---
+
+import { Aside, LinkCard } from '@astrojs/starlight/components';
+
+A panicking proc macro turns user code into an internal compiler error — the worst failure mode a library can produce. rsmack's design goal is that arbitrary input becomes a `compile_error!`, never an ICE.
+
+## The problem with proc-macro-error2
+
+For years the Rust ecosystem accepted panics as a proc-macro control-flow mechanism: `proc-macro-error` and its maintained fork `proc-macro-error2` catch panics and convert them into compiler errors. rsmack dropped the dependency in 0.20 and replaced it with a `syn::Error`-based collector: `Logr`. There is no unwinding and no panic catching anywhere in the workspace, and the generated code carries no `#[proc_macro_error]` attribute.
+
+## Two severities, one pass
+
+| Severity | Mechanism | Use when |
+| --- | --- | --- |
+| Fatal | Return a `syn::Error` with `?`; render through `ExecEnv::finish_result` | Expansion is meaningless — unreadable file, unparsable item |
+| Collected | `Logr::emit_error`, flushed by `finish` as `compile_error!` tokens | Output is still usable — one bad field should not hide the others |
+
+Collected diagnostics let one expansion report **every** problem in a single pass. `edoc` leans on this: a tuple with two broken elements produces two prefixed errors, and the healthy elements still render their docs.
+
+## The style guide
+
+Messages follow `docs/ERROR_STYLE.md` in the repository: start with the failure, use consistent verbs (`Failed to ...`, `Only ... supported`, `Unsupported ...`, `Invalid ...`), backtick identifiers, and drop the trailing period. The [error messages reference](/reference/error-messages/) catalogues the results.
+
+## Proving the guarantee
+
+Three mechanisms keep the no-panic promise honest:
+
+1. **Fuzzing** — four `cargo fuzz` targets feed arbitrary bytes to the parsers (`edoc` constants source, `edoc` meta, `wrap` meta, `megamac` meta). Invalid input must produce a clean error, valid input must resolve or report issues — never panic.
+2. **Snapshot tests** — every error path is pinned with `trybuild` in `packages/rsmack-ui-tests`, so both the wording and the promise fail a review if they regress.
+3. **Zero-allow pedantic lints** — `clippy::pedantic` is denied workspace-wide with no allows, closing the common paths to accidental `unwrap`/`expect`.
+
+<Aside kind="note" title="Your macros inherit the toolkit">
+	Writing your own macro with `megamac` routes your diagnostics through the same `ExecEnv`/`Logr` pair — the prefix format and the two-severity model come for free. See [handle macro errors](/guides/handle-errors/).
+</Aside>
+
+## Next steps
+
+<LinkCard title="Error messages reference" description="Every snapshotted diagnostic with its trigger." href="/reference/error-messages/" />
