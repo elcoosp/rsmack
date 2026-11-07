@@ -1,0 +1,55 @@
+---
+title: rsmack — the Rust proc-macro factory
+description: Write the exec function, get a documented macro. edoc, wrap, seanum, folder_iso_struct, and megamac in one dependency.
+type: overview
+---
+
+import { Card, CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
+import { Image } from 'astro:assets';
+import logo from '../../assets/logo.png';
+
+<div class="hero-logo" style="display: flex; justify-content: center; margin: 1rem 0 1.5rem;">
+	<Image src={logo} alt="rsmack logo: orange curly braces around a gear" width={160} />
+</div>
+
+**rsmack** is a Rust proc-macro factory. You write a `pub struct Args` with doc comments and a `pub fn exec` that does the transformation; the framework handles entrypoint generation, payload-protocol selection, documentation extraction, error plumbing, and file codegen. One `cargo add rsmack` installs every shipped macro.
+
+The workspace ships five macros and the toolkit behind them:
+
+- [`edoc`](/reference/edoc/) — documentation from constants, with typed const-expression evaluation
+- [`wrap`](/reference/wrap/) — field type wrappers that accept any type
+- [`seanum`](/reference/seanum/) — `SeaORM` active enums with discriminants and migrations
+- [`folder_iso_struct`](/reference/folder-iso-struct/) — inline compile-time folder mirroring
+- [`megamac`](/reference/megamac/) — the signature-driven factory that generates all of the above and your own macros
+
+Everything rests on [`rsmack-utils`](/reference/rsmack-utils/), which provides the `ExecEnv`/`Logr` diagnostics pair — a `syn::Error`-based, panic-free replacement for the abandoned `proc-macro-error2` crate.
+
+<Aside kind="tip" title="A living example">
+	The [`rsmack-example-macros`](https://github.com/elcoosp/rsmack/tree/main/packages/rsmack-example-macros) crate in the repository exercises every macro kind — including a raw-payload DSL macro — end to end in the test suite. Copy it as a starting point.
+</Aside>
+
+## Choose your path
+
+<CardGrid>
+	<Card title="Use the shipped macros">
+		Add `rsmack`, annotate a struct, and read your docs in `cargo doc`. Start with the [getting-started tutorial](/tutorials/getting-started/).
+	</Card>
+	<Card title="Write your own macro">
+		Declare `megamac!(kind = Func, name = my_macro)`, write `src/impls/my_macro.rs`, done. Follow the [custom macro guide](/guides/write-your-own-macro/).
+	</Card>
+	<Card title="Look up an option">
+		Every attribute option, default, and error message is tabulated in the [Reference](/reference/edoc/) section.
+	</Card>
+	<Card title="Understand the design">
+		Read how the signature-driven [payload protocol](/explanation/payload-protocol/) and the [diagnostics philosophy](/explanation/diagnostics-philosophy/) shape the workspace.
+	</Card>
+</CardGrid>
+
+## Requirements
+
+- Rust **1.94 or newer** (edition 2024, pinned by `sea-orm 2`)
+- A crate where you want to use or author macros
+
+## Next steps
+
+<LinkCard title="Getting started" description="Install rsmack and generate your first documented macro in ten minutes." href="/tutorials/getting-started/" />
