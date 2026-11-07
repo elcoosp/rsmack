@@ -1,0 +1,79 @@
+---
+title: Wrap field types
+description: Wrap every field of a named struct in Option, Box, Vec, or any generic type, with per-field skip, with, and map control.
+type: how-to
+---
+
+import { Aside, LinkCard } from '@astrojs/starlight/components';
+
+Use [`wrap`](/reference/wrap/) to produce draft, builder, or storage variants of a struct without hand-writing parallel types. One attribute wraps every field of a named struct in the generic type you choose.
+
+## Wrap a whole struct
+
+Set the default wrapper with `with` — a bare identifier or a string literal both work:
+
+```rust
+use rsmack_wrap::wrap;
+
+#[wrap(with = Option)]
+struct User {
+    name: String,      // becomes Option<String>
+    tags: Vec<String>, // becomes Option<Vec<String>>
+}
+```
+
+## Control individual fields
+
+Per-field `#[wrap(...)]` attributes override the default. The `skip` option leaves a field untouched, a per-field `with` swaps the wrapper, and `map` replaces the inner type altogether:
+
+```rust
+#[wrap(with = Option)]
+struct User {
+    name: String,
+    #[wrap(skip)]
+    untouched: &'static str, // stays &'static str
+    #[wrap(with = "Box")]
+    boxed: String, // becomes Box<String>
+    #[wrap(with = "Vec", map = "u8")]
+    raw: String, // becomes Vec<u8>
+}
+```
+
+## Any type wraps
+
+The transformation rewrites the field type to `Wrapper<Inner>`, so every type expression wraps: paths, slices, tuples, arrays, references, raw pointers, function pointers, and trait objects:
+
+```rust
+#[wrap(with = Option)]
+struct Inputs {
+    borrowed: &'static str,            // Option<&'static str>
+    pointer: *const u8,                // Option<*const u8>
+    callback: fn(u8) -> bool,          // Option<fn(u8) -> bool>
+    object: Box<dyn Send>,             // Option<Box<dyn Send>>
+}
+```
+
+## Keep serde derives after wrap
+
+<Aside kind="caution" title="Run wrap before serde">
+	Execute `wrap` before `#[derive(Serialize, Deserialize)]`, otherwise the derive errors. The derive must observe the wrapped field types.
+</Aside>
+
+```rust
+#[wrap(with = Option)]
+#[derive(serde::Serialize, serde::Deserialize)]
+struct User {
+    name: String,
+}
+```
+
+## Mind the constraints
+
+- Only named-field structs are supported; tuple and unit structs report `Only named struct supported`.
+- Generics and where-clauses pass through untouched — only the `fields` section of the struct is rewritten.
+- Non-`wrap` attributes are preserved; the `#[wrap(...)]` attributes themselves are consumed.
+
+## Next steps
+
+<LinkCard title="wrap reference" description="Every option, default, and error message in one table." href="/reference/wrap/" />
+<LinkCard title="SeaORM enums (seanum)" description="Generate active enums with discriminants and migrations." href="/guides/seaorm-enums/" />
