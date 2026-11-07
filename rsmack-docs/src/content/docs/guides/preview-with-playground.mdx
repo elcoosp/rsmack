@@ -1,0 +1,54 @@
+---
+title: Preview with the playground
+description: Print the expansion a megamac call would emit — without compiling anything — with the rsmack-megamac playground binary.
+type: how-to
+---
+
+import { LinkCard, Aside } from '@astrojs/starlight/components';
+
+The `playground` binary in [`rsmack-megamac`](/reference/megamac/) prints the code a `megamac!` call would generate — the entrypoint function and its documentation — before you compile anything. It reads your `src/impls/<name>.rs` and replays the same analysis the macro performs, memoization included.
+
+## Run it from the rsmack workspace
+
+Inside the rsmack repository:
+
+```shell
+cargo run -p rsmack-megamac --bin playground -- --kind Attr --name edoc
+```
+
+## Run it in your own crate
+
+The binary ships with the published `rsmack-megamac` crate. Install it once:
+
+```shell
+cargo install rsmack-megamac
+```
+
+Then run it from your crate root, where `--src-dir` defaults to `$CARGO_MANIFEST_DIR/src`:
+
+```shell
+playground --kind Func --name greeting
+```
+
+The output is the generated entrypoint source — the proc-macro function signature and the doc comment assembled from your `Args` docs — printed to stdout.
+
+## Flags
+
+| Flag | Default | Meaning |
+| --- | --- | --- |
+| `--kind` | required | `Func`, `Attr`, or `Derive` |
+| `--name` | required | The macro name declared in `megamac!` |
+| `--src-dir` | `$CARGO_MANIFEST_DIR/src` | Where `impls/<name>.rs` is looked up |
+| `--impls` | `impls` | The implementation module name |
+| `--args` | `Args` | The args struct name |
+| `--doc` | `inline` | `readme`, `inline`, or `none` |
+
+Errors exit non-zero with `error: <message>`; a missing or unexpected argument prints the usage line.
+
+<Aside kind="note" title="rust-analyzer friendly">
+	Because the analysis is memoized by `(path, mtime, len)`, repeated playground runs — like rust-analyzer re-expansions — pay a stat, not a parse. Warm expansions measure 15–18 µs in the [benchmarks](/reference/benchmarks/).
+</Aside>
+
+## Next steps
+
+<LinkCard title="megamac reference" description="How the payload protocol is inferred from your exec signature." href="/reference/megamac/" />
