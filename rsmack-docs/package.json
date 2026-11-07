@@ -1,0 +1,37 @@
+{
+  "name": "rsmack-docs",
+  "type": "module",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro build",
+    "postbuild": "node scripts/generate-llms.mjs",
+    "preview": "astro preview",
+    "astro": "astro",
+    "check": "astro check",
+    "lint": "markdownlint-cli2 \"src/content/docs/**/*.{md,mdx}\"",
+    "qa": "node scripts/qa-screenshots.mjs"
+  },
+  "dependencies": {
+    "@astrojs/check": "0.9.12",
+    "@astrojs/starlight": "0.42.10",
+    "astro": "7.4.7",
+    "sharp": "0.35.3",
+    "starlight-heading-badges": "0.8.0",
+    "starlight-image-zoom": "0.16.2",
+    "starlight-links-validator": "0.27.0"
+  },
+  "devDependencies": {
+    "markdownlint-cli2": "0.20.0",
+    "node-html-parser": "7.1.0",
+    "playwright": "1.58.2",
+    "typescript": "6.0.3"
+  },
+  "pnpm": {
+    "overrides": {
+      "@emnapi/runtime": "1.11.1"
+    }
+  }
+}
