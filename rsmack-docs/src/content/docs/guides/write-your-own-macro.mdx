@@ -1,0 +1,121 @@
+---
+title: Write your own macro
+description: Ship a documented function-like, attribute, or derive macro in a dozen lines with megamac — payload protocol included.
+type: how-to
+---
+
+import { Aside, LinkCard, Steps, TabItem, Tabs } from '@astrojs/starlight/components';
+
+Use [`megamac`](/reference/megamac/) to author your own proc macro. You declare the macro with one `megamac!` call and write an `exec` function in `src/impls/<name>.rs`; the framework generates the `#[proc_macro]` entrypoint, parses the payload, extracts the documentation, and wires the diagnostics.
+
+## 1. Create a proc-macro crate
+
+```shell
+cargo new my-macros --lib
+cd my-macros
+```
+
+Mark the crate as a proc-macro crate and add both rsmack dependencies — `rsmack-megamac` for the codegen and `rsmack-utils` because the generated code routes through its entrypoint drivers:
+
+```toml
+[lib]
+proc-macro = true
+
+[dependencies]
+rsmack-megamac = "1"
+rsmack-utils = "1"
+darling = "0.24"
+proc-macro2 = "1"
+quote = "1"
+syn = "3"
+```
+
+## 2. Declare the macro
+
+```rust
+// src/lib.rs
+use rsmack_megamac::megamac;
+
+mod impls;
+
+// Generates a function-like `greeting!` macro documented from
+// src/impls/greeting.rs's `Args` doc comments.
+megamac!(kind = Func, name = greeting);
+```
+
+## 3. Write the implementation
+
+The convention is `src/impls/<name>.rs` with a documented `Args` struct and an `exec` function:
+
+```rust
+// src/impls/greeting.rs
+use darling::FromMeta;
+use proc_macro2::TokenStream;
+use rsmack_utils::megamac::ExecEnv;
+
+/// Greeting configuration
+#[derive(Debug, FromMeta)]
+pub struct Args {
+    /// Recipient of the greeting
+    pub who: String,
+}
+
+pub fn exec(args: Args, env: &ExecEnv) -> TokenStream {
+    let who = args.who;
+    env.finish(quote::quote! {
+        pub const GREETING: &str = concat!("Hello ", #who, "!");
+    })
+}
+```
+
+Doc comments become the generated macro's documentation: the struct doc is the intro, and each field doc becomes a `# Parameters` bullet with its type. Fields that are `Option<T>` or carry `#[darling(default)]` are marked *(optional)*.
+
+## 4. Use it
+
+From a crate that depends on `my-macros`:
+
+```rust
+my_macros::greeting!(who = "world");
+assert_eq!(GREETING, "Hello world!");
+```
+
+## Pick the macro kind
+
+| Declaration | Generates | `exec` receives |
+| --- | --- | --- |
+| `megamac!(kind = Func, name = x)` | `x!` function-like macro | darling-parsed `Args` or raw tokens |
+| `megamac!(kind = Attr, name = x)` | `#[x]` attribute macro | the item plus darling `Args` or raw tokens |
+| `megamac!(kind = Derive, name = x)` | derive named `X` (PascalCase of `name`) | the `DeriveInput` only |
+
+## Switch to a raw-payload DSL macro
+
+Change the `exec` signature to take a raw `TokenStream` — the signature *is* the configuration:
+
+```rust
+// src/impls/shout.rs — declared with megamac!(kind = Func, name = shout);
+use proc_macro2::TokenStream;
+use rsmack_utils::megamac::ExecEnv;
+
+pub fn exec(input: TokenStream, env: &ExecEnv) -> TokenStream {
+    let shouted = input.to_string().to_uppercase();
+    env.finish(quote::quote! { pub const SHOUTED: &str = #shouted; })
+}
+```
+
+```rust
+my_macros::shout!(hello megamac);
+assert_eq!(SHOUTED, "HELLO MEGAMAC");
+```
+
+<Aside kind="caution" title="Drop args when the payload is raw">
+	`args = "MyArgs"` combined with a raw `TokenStream` signature is a fatal configuration error: remove `args` or change the signature.
+</Aside>
+
+## Choose the documentation source
+
+The `doc` knob controls the generated documentation: `doc = "readme"` embeds the calling crate's `README.md` through `include_str!`, `doc = "inline"` generates only the parameter docs (the default, with no README dependency), and `doc = "none"` emits no docs. Optional `impls = "my_impls"` and `args = "MyArgs"` rename the implementation module and args struct.
+
+## Next steps
+
+<LinkCard title="megamac reference" description="The full invocation grammar, signature protocols, and cache behavior." href="/reference/megamac/" />
+<LinkCard title="Handle macro errors" description="Report fatal and collected diagnostics without panicking." href="/guides/handle-errors/" />
