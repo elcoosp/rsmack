@@ -1,0 +1,92 @@
+---
+title: megamac reference
+description: Complete reference for the megamac macro factory — invocation grammar, signature-driven payload protocol, doc generation, caching, and the playground.
+type: reference
+---
+
+import { Badge, LinkCard } from '@astrojs/starlight/components';
+
+`megamac` is a procedural macro that generates procedural macros. One `megamac!` call plus an `impls/<name>.rs` file yields a fully documented `#[proc_macro]`, `#[proc_macro_attribute]`, or `#[proc_macro_derive]` entrypoint. Crate path: `rsmack_megamac` (facade: `rsmack::megamac`, feature `megamac`). Authoring additionally requires a direct `rsmack-utils` dependency, because the generated code references `rsmack_utils::exec::*` drivers and `ExecEnv`.
+
+## Invocation
+
+```rust
+megamac!(kind = Attr, name = edoc, impls = "impls", args = "Args", doc = "readme");
+```
+
+## Arguments
+
+### kind :badge[required]
+
+- **Type:** `Func` \| `Attr` \| `Derive`
+- **Meaning:** function-like macro, attribute macro, or derive macro; anything else is fatal — `Unsupported MacroKind 'X', expected 'Attr', 'Func' or 'Derive'`
+
+### name :badge[required]
+
+- **Type:** identifier
+- **Meaning:** the generated macro's name; for `kind = Derive`, the derive is the PascalCase of `name` (`type_name` → `#[derive(TypeName)]`)
+
+### impls :badge[optional]{variant="note"}
+
+- **Type:** identifier
+- **Default:** `impls`
+- **Meaning:** module directory that holds `<name>.rs`
+
+### args :badge[optional]{variant="note"}
+
+- **Type:** identifier
+- **Default:** `Args`
+- **Meaning:** the darling payload struct in darling mode; setting it alongside a raw `TokenStream` signature is fatal
+
+### doc :badge[optional]{variant="note"}
+
+- **Type:** `readme` \| `inline` \| `none`
+- **Default:** `inline`
+- **Meaning:** `readme` embeds the calling crate's `README.md` via `include_str!`; `inline` generates only the parameter docs; `none` emits no docs
+
+## The impl file convention
+
+The implementation lives at `<src>/<impls>/<name>.rs` (e.g. `src/impls/greeting.rs`) and contains a documented `Args` struct plus an `exec` function. Missing files are fatal — `Failed to get macro_impl_src of <name> at <path>: <os error>`; unparsable files report `Failed to parse macro_impl_src <name>, this may happen for no real reason in your IDE, check that your project still builds with cargo`.
+
+## Payload protocol — the signature is the configuration
+
+The generated entrypoint reads the `exec` signature (the trailing `&ExecEnv` parameter is ignored):
+
+| `exec` signature | Protocol | Generated entrypoint |
+| --- | --- | --- |
+| `exec(args: Args, env: &ExecEnv) -> TokenStream` | darling meta parsing, docs from `Args` | `Func` |
+| `exec(input: TokenStream, env: &ExecEnv) -> TokenStream` | raw payload, DSL macros | `Func` |
+| `exec(args: Args, item: syn::Item, env: &ExecEnv) -> TokenStream` | darling + parsed item | `Attr` |
+| `exec(input: TokenStream, item: syn::Item, env: &ExecEnv) -> TokenStream` | raw payload + parsed item | `Attr` |
+| `exec(item: syn::DeriveInput, env: &ExecEnv) -> TokenStream` | derive, no payload | `Derive` |
+
+The item type for `Attr` macros is inferred from the signature — no separate configuration. The args-struct ident follows the signature's type name unless `args = "..."` overrides it.
+
+## Generated documentation
+
+For darling-mode `Func` and `Attr` macros:
+
+- The `Args` struct's doc comment becomes the intro paragraph.
+- Each field doc becomes a `# Parameters` bullet: ``* `field` - <doc>`` plus ``+ type: [`Ty`]``.
+- Fields that are `Option<T>` or carry `#[darling(default)]` are marked *(optional)*; undocumented fields read "Not documented".
+- `doc = "readme"` prepends `#[doc = include_str!("../README.md")]`.
+- The `# Parameters` section is omitted when there are no fields, in raw mode, for derives, and with `doc = "none"`. A unit `Args` (`pub struct Args;`) is legitimate.
+
+Configuration errors: a missing `Args` struct is fatal — `Failed to find 'Args' struct in 'impls'`; only named fields document — `Unsupported 'Args' struct: only named fields are documented`.
+
+## Memoization
+
+The impl-file analysis is cached per process keyed by `(path, mtime, len, kind, args_override)`; cached fatals and issues replay identically on warm resolutions. Warm expansions measure 15–18 µs in the [benchmarks](/reference/benchmarks/).
+
+## Playground
+
+```shell
+cargo run -p rsmack-megamac --bin playground -- --kind Attr --name edoc
+```
+
+Prints the expansion without compiling. Flags: `--kind`, `--name` (required), `--src-dir` (default `$CARGO_MANIFEST_DIR/src`), `--impls`, `--args`, `--doc`.
+
+## Next steps
+
+<LinkCard title="Write your own macro" description="Ship a documented macro in a dozen lines." href="/guides/write-your-own-macro/" />
+<LinkCard title="The payload protocol" description="Why the exec signature is the configuration." href="/explanation/payload-protocol/" />
