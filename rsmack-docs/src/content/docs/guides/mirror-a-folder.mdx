@@ -4,7 +4,7 @@ description: Mirror a folder of Rust modules into a struct inline at compile tim
 type: how-to
 ---
 
-import { Aside, FileTree, LinkCard } from '@astrojs/starlight/components';
+import { Aside, Code, FileTree, LinkCard } from '@astrojs/starlight/components';
 
 Use [`folder_iso_struct`](/reference/folder-iso-struct/) when a struct must mirror a folder of modules: game levels, screen definitions, plugin registries. The folder is scanned at macro-expansion time and the mirrored struct is emitted inline — one attribute, zero build scripts, nothing in `OUT_DIR`.
 
@@ -21,8 +21,7 @@ Start from a folder of modules that your crate already declares:
 		- main.rs
 </FileTree>
 
-```rust
-// src/main.rs
+<Code lang="rust" code={`// src/main.rs
 mod levels;
 
 use rsmack_fs::folder_iso_struct;
@@ -32,8 +31,7 @@ pub struct Levels {
     // The declared fields are a sketch only: the mirror is generated from the folder.
     #[expect(dead_code)]
     alpha: (),
-}
-```
+}`} />
 
 The macro scans `src/levels/`, skips `mod.rs`, and generates one field per file stem. `button.rs` becomes a field `button` of type `crate::levels::button::Button`; `beta_gamma.rs` becomes `beta_gamma: crate::levels::beta_gamma::BetaGamma`. The field names are snake_case and the type names are PascalCase conversions of the stem.
 
@@ -54,10 +52,8 @@ With `recursive = true`, each subdirectory becomes an inline `pub mod <name>` ho
 				- settings.rs
 </FileTree>
 
-```rust
-#[folder_iso_struct(folder = "ui/screens", recursive = true, derives("Debug"))]
-pub struct Screens {}
-```
+<Code lang="rust" code={`#[folder_iso_struct(folder = "ui/screens", recursive = true, derives("Debug"))]
+pub struct Screens {}`} />
 
 ## What carries over
 

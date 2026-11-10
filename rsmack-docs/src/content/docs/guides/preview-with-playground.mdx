@@ -4,7 +4,7 @@ description: Print the expansion a megamac call would emit — without compiling
 type: how-to
 ---
 
-import { LinkCard, Aside } from '@astrojs/starlight/components';
+import { Aside, Code, LinkCard } from '@astrojs/starlight/components';
 
 The `playground` binary in [`rsmack-megamac`](/reference/megamac/) prints the code a `megamac!` call would generate — the entrypoint function and its documentation — before you compile anything. It reads your `src/impls/<name>.rs` and replays the same analysis the macro performs, memoization included.
 
@@ -12,23 +12,17 @@ The `playground` binary in [`rsmack-megamac`](/reference/megamac/) prints the co
 
 Inside the rsmack repository:
 
-```shell
-cargo run -p rsmack-megamac --bin playground -- --kind Attr --name edoc
-```
+<Code lang="shell" code={`cargo run -p rsmack-megamac --bin playground -- --kind Attr --name edoc`} />
 
 ## Run it in your own crate
 
 The binary ships with the published `rsmack-megamac` crate. Install it once:
 
-```shell
-cargo install rsmack-megamac
-```
+<Code lang="shell" code={`cargo install rsmack-megamac`} />
 
 Then run it from your crate root, where `--src-dir` defaults to `$CARGO_MANIFEST_DIR/src`:
 
-```shell
-playground --kind Func --name greeting
-```
+<Code lang="shell" code={`playground --kind Func --name greeting`} />
 
 The output is the generated entrypoint source — the proc-macro function signature and the doc comment assembled from your `Args` docs — printed to stdout.
 

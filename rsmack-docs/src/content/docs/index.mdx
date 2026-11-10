@@ -1,16 +1,21 @@
 ---
 title: rsmack — the Rust proc-macro factory
+template: splash
 description: Write the exec function, get a documented macro. edoc, wrap, seanum, folder_iso_struct, and megamac in one dependency.
 type: overview
+hero:
+  title: "rsmack — the Rust proc-macro factory"
+  tagline: "Write the exec function, get a documented macro."
+  image:
+    file: ../../assets/logo.png
+    alt: "rsmack — the Rust proc-macro factory"
+  actions:
+    - text: Start the tutorial
+      link: /tutorials/getting-started/
+      icon: right-arrow
 ---
 
-import { Card, CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
-import { Image } from 'astro:assets';
-import logo from '../../assets/logo.png';
-
-<div class="hero-logo" style="display: flex; justify-content: center; margin: 1rem 0 1.5rem;">
-	<Image src={logo} alt="rsmack logo: orange curly braces around a gear" width={160} />
-</div>
+import { Aside, Card, CardGrid, LinkButton, LinkCard } from '@astrojs/starlight/components';
 
 **rsmack** is a Rust proc-macro factory. You write a `pub struct Args` with doc comments and a `pub fn exec` that does the transformation; the framework handles entrypoint generation, payload-protocol selection, documentation extraction, error plumbing, and file codegen. One `cargo add rsmack` installs every shipped macro.
 
@@ -44,6 +49,8 @@ Everything rests on [`rsmack-utils`](/reference/rsmack-utils/), which provides t
 		Read how the signature-driven [payload protocol](/explanation/payload-protocol/) and the [diagnostics philosophy](/explanation/diagnostics-philosophy/) shape the workspace.
 	</Card>
 </CardGrid>
+
+<LinkButton href="/tutorials/getting-started/" icon="right-arrow">Start the tutorial</LinkButton>
 
 ## Requirements
 

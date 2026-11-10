@@ -19,7 +19,7 @@ Routes are relative to the site root. Rendered pages are plain HTML.
 - [Write your own macro | rsmack](/guides/write-your-own-macro/): Ship a documented function-like, attribute, or derive macro in a dozen lines with megamac — payload protocol included.
 - [Benchmarks reference | rsmack](/reference/benchmarks/): Criterion expansion benchmarks for every macro, with the 90x megamac memoization win and the repro commands.
 - [edoc reference | rsmack](/reference/edoc/): Complete reference for the edoc attribute macro — attribute syntax, const-expression grammar, resolution, caching, and errors.
-- [Error messages reference | rsmack](/reference/error-messages/): Every rustc diagnostic the shipped macros emit, with the
+- [Error messages reference | rsmack](/reference/error-messages/): Every rustc diagnostic the shipped macros emit, with the #[crate::macro] prefix format and the snapshot-tested catalogue.
 - [folder_iso_struct reference | rsmack](/reference/folder-iso-struct/): Complete reference for the folder_iso_struct attribute macro — options, scanning rules, carry-over behavior, and errors.
 - [megamac reference | rsmack](/reference/megamac/): Complete reference for the megamac macro factory — invocation grammar, signature-driven payload protocol, doc generation, caching, and the playground.
 - [rsmack-utils reference | rsmack](/reference/rsmack-utils/): Complete reference for rsmack-utils — ExecEnv, Logr, the five entrypoint drivers, filesystem helpers, and the exported macros.

@@ -4,14 +4,13 @@ description: Generate SeaORM active enums with minimal default derives, explicit
 type: how-to
 ---
 
-import { Aside, LinkCard } from '@astrojs/starlight/components';
+import { Aside, Code, LinkCard } from '@astrojs/starlight/components';
 
 Use [`seanum`](/reference/seanum/) when an enum must live in a database through [SeaORM](https://www.sea-ql.org/SeaORM/). The macro generates the `DeriveActiveEnum` plumbing with deliberately minimal default derives and adds integer discriminants or a migration helper on demand.
 
 ## Define a string-backed enum
 
-```rust
-use rsmack_seanum::seanum;
+<Code lang="rust" code={`use rsmack_seanum::seanum;
 
 #[seanum(
     rs_type = "String",
@@ -25,8 +24,7 @@ pub enum SwitchAction {
     #[seanum(rename = "send_email")]
     SendEmail,
     SendSms,
-}
-```
+}`} />
 
 The generated values are `send_email` (explicit `rename` wins over `rename_all`) and `send_sms`. The default derives are `Clone`, `Debug`, `PartialEq`, `Eq`, `Hash`, `EnumIter`, and `DeriveActiveEnum` — `serde` and `fake` support is opt-in through `derives(...)`, never a hidden dependency.
 
@@ -34,14 +32,12 @@ The generated values are `send_email` (explicit `rename` wins over `rename_all`)
 
 With an integer `rs_type` from `i8` through `u64` (plus `isize`/`usize`), the macro adds `#[repr(...)]`, a `#[sea_orm(num_value = N)]` on every variant, and a value-based `TryFrom`:
 
-```rust
-#[seanum(rs_type = "i32", db_type = "Integer")]
+<Code lang="rust" code={`#[seanum(rs_type = "i32", db_type = "Integer")]
 pub enum Level {
     Low = 10,
     Medium, // continues from 11
     High,
-}
-```
+}`} />
 
 Explicit discriminants are honored and later variants continue from them. Duplicates are reported as a collected error and the `TryFrom` is skipped, while the enum itself still compiles.
 
@@ -49,13 +45,11 @@ Explicit discriminants are honored and later variants continue from them. Duplic
 
 `migration = true` emits a `migration_column_def()` helper for use with [`sea-orm-migration`](https://docs.rs/sea-orm-migration):
 
-```rust
-#[seanum(rs_type = "String", db_type = "Text", migration = true)]
+<Code lang="rust" code={`#[seanum(rs_type = "String", db_type = "Text", migration = true)]
 pub enum Status {
     Active,
     Retired,
-}
-```
+}`} />
 
 The helper maps the `db_type` to the matching `ColumnDef` method — `Text`, `Integer`, `BigInt`, `Boolean`, `DateTime`, and twelve more are covered.
 

@@ -4,7 +4,7 @@ description: Wrap every field of a named struct in Option, Box, Vec, or any gene
 type: how-to
 ---
 
-import { Aside, LinkCard } from '@astrojs/starlight/components';
+import { Aside, Code, LinkCard } from '@astrojs/starlight/components';
 
 Use [`wrap`](/reference/wrap/) to produce draft, builder, or storage variants of a struct without hand-writing parallel types. One attribute wraps every field of a named struct in the generic type you choose.
 
@@ -12,22 +12,19 @@ Use [`wrap`](/reference/wrap/) to produce draft, builder, or storage variants of
 
 Set the default wrapper with `with` — a bare identifier or a string literal both work:
 
-```rust
-use rsmack_wrap::wrap;
+<Code lang="rust" code={`use rsmack_wrap::wrap;
 
 #[wrap(with = Option)]
 struct User {
     name: String,      // becomes Option<String>
     tags: Vec<String>, // becomes Option<Vec<String>>
-}
-```
+}`} />
 
 ## Control individual fields
 
 Per-field `#[wrap(...)]` attributes override the default. The `skip` option leaves a field untouched, a per-field `with` swaps the wrapper, and `map` replaces the inner type altogether:
 
-```rust
-#[wrap(with = Option)]
+<Code lang="rust" code={`#[wrap(with = Option)]
 struct User {
     name: String,
     #[wrap(skip)]
@@ -36,22 +33,19 @@ struct User {
     boxed: String, // becomes Box<String>
     #[wrap(with = "Vec", map = "u8")]
     raw: String, // becomes Vec<u8>
-}
-```
+}`} />
 
 ## Any type wraps
 
 The transformation rewrites the field type to `Wrapper<Inner>`, so every type expression wraps: paths, slices, tuples, arrays, references, raw pointers, function pointers, and trait objects:
 
-```rust
-#[wrap(with = Option)]
+<Code lang="rust" code={`#[wrap(with = Option)]
 struct Inputs {
     borrowed: &'static str,            // Option<&'static str>
     pointer: *const u8,                // Option<*const u8>
     callback: fn(u8) -> bool,          // Option<fn(u8) -> bool>
     object: Box<dyn Send>,             // Option<Box<dyn Send>>
-}
-```
+}`} />
 
 ## Keep serde derives after wrap
 
@@ -59,13 +53,11 @@ struct Inputs {
 	Execute `wrap` before `#[derive(Serialize, Deserialize)]`, otherwise the derive errors. The derive must observe the wrapped field types.
 </Aside>
 
-```rust
-#[wrap(with = Option)]
+<Code lang="rust" code={`#[wrap(with = Option)]
 #[derive(serde::Serialize, serde::Deserialize)]
 struct User {
     name: String,
-}
-```
+}`} />
 
 ## Mind the constraints
 

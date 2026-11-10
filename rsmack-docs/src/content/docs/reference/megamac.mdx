@@ -4,15 +4,13 @@ description: Complete reference for the megamac macro factory — invocation gra
 type: reference
 ---
 
-import { Badge, LinkCard } from '@astrojs/starlight/components';
+import { Badge, Code, LinkCard } from '@astrojs/starlight/components';
 
 `megamac` is a procedural macro that generates procedural macros. One `megamac!` call plus an `impls/<name>.rs` file yields a fully documented `#[proc_macro]`, `#[proc_macro_attribute]`, or `#[proc_macro_derive]` entrypoint. Crate path: `rsmack_megamac` (facade: `rsmack::megamac`, feature `megamac`). Authoring additionally requires a direct `rsmack-utils` dependency, because the generated code references `rsmack_utils::exec::*` drivers and `ExecEnv`.
 
 ## Invocation
 
-```rust
-megamac!(kind = Attr, name = edoc, impls = "impls", args = "Args", doc = "readme");
-```
+<Code lang="rust" code={`megamac!(kind = Attr, name = edoc, impls = "impls", args = "Args", doc = "readme");`} />
 
 ## Arguments
 
@@ -67,7 +65,7 @@ The item type for `Attr` macros is inferred from the signature — no separate c
 For darling-mode `Func` and `Attr` macros:
 
 - The `Args` struct's doc comment becomes the intro paragraph.
-- Each field doc becomes a `# Parameters` bullet: ``* `field` - <doc>`` plus ``+ type: [`Ty`]``.
+- Each field doc becomes a `# Parameters` bullet: ``* `field` - `<doc>``` plus ``+ type: [`Ty`]``.
 - Fields that are `Option<T>` or carry `#[darling(default)]` are marked *(optional)*; undocumented fields read "Not documented".
 - `doc = "readme"` prepends `#[doc = include_str!("../README.md")]`.
 - The `# Parameters` section is omitted when there are no fields, in raw mode, for derives, and with `doc = "none"`. A unit `Args` (`pub struct Args;`) is legitimate.
@@ -80,9 +78,7 @@ The impl-file analysis is cached per process keyed by `(path, mtime, len, kind, 
 
 ## Playground
 
-```shell
-cargo run -p rsmack-megamac --bin playground -- --kind Attr --name edoc
-```
+<Code lang="shell" code={`cargo run -p rsmack-megamac --bin playground -- --kind Attr --name edoc`} />
 
 Prints the expansion without compiling. Flags: `--kind`, `--name` (required), `--src-dir` (default `$CARGO_MANIFEST_DIR/src`), `--impls`, `--args`, `--doc`.
 

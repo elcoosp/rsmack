@@ -4,13 +4,11 @@ description: Criterion expansion benchmarks for every macro, with the 90x megama
 type: reference
 ---
 
-import { Aside, LinkCard } from '@astrojs/starlight/components';
+import { Aside, Code, LinkCard } from '@astrojs/starlight/components';
 
 Expansion benchmarks run with [criterion](https://github.com/bheisler/criterion.rs) 0.8.2 (mean of 100 samples, Rust 1.99, `ubuntu-latest`-class runners). Reproduce with:
 
-```shell
-cargo bench --workspace
-```
+<Code lang="shell" code={`cargo bench --workspace`} />
 
 ## Results
 
@@ -39,10 +37,8 @@ cargo bench --workspace
 <Aside kind="tip" title="Faster iteration in your own crate">
 	Proc-macro recompiles get quicker when dependencies are pre-optimized. Drop this in your `Cargo.toml`:
 
-	```toml
-	[profile.dev.package."*"]
-	opt-level = 3
-	```
+<Code lang="toml" code={`  [profile.dev.package."*"]
+  opt-level = 3`} />
 </Aside>
 
 ## Next steps

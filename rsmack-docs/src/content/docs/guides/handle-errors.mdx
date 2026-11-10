@@ -4,7 +4,7 @@ description: Report fatal and collected diagnostics from your megamac macros wit
 type: how-to
 ---
 
-import { Aside, LinkCard } from '@astrojs/starlight/components';
+import { Aside, Code, LinkCard } from '@astrojs/starlight/components';
 
 Macros that panic produce ICEs — internal compiler errors — in user builds. The [`rsmack-utils`](/reference/rsmack-utils/) diagnostics pair replaces panics with structured reporting: fatal problems return a `syn::Error`, recoverable problems are collected and flushed together, and every message carries your macro's prefix.
 
@@ -12,19 +12,17 @@ Macros that panic produce ICEs — internal compiler errors — in user builds. 
 
 When expansion cannot continue, return a `syn::Error` with `?` and hand the `Result` to `ExecEnv::finish_result`:
 
-```rust
-pub fn exec(args: Args, env: &ExecEnv) -> TokenStream {
+<Code lang="rust" code={`pub fn exec(args: Args, env: &ExecEnv) -> TokenStream {
     env.finish_result(run(args))
 }
 
 fn run(args: Args) -> syn::Result<TokenStream> {
     let path = args.path;
     let file = std::fs::read_to_string(&path)
-        .map_err(|e| syn::Error::new(path.span(), format!("Failed to read file `{path}`: {e}")))?;
+                    .map_err(|e| syn::Error::new(path.span(), format!("Failed to read file \`{path}\`: {e}")))?;
     // ...
     Ok(quote::quote! {})
-}
-```
+}`} />
 
 The error is rendered as a `compile_error!` at the offending span, prefixed `#[your_crate::your_macro]`.
 
@@ -32,14 +30,12 @@ The error is rendered as a `compile_error!` at the offending span, prefixed `#[y
 
 When one bad field should not hide the others, collect errors with `Logr::emit_error` and flush at the end. `ExecEnv` already owns a `Logr`; `env.finish(...)` flushes the collected errors as `compile_error!` tokens appended to otherwise valid output:
 
-```rust
-for field in args.fields {
+<Code lang="rust" code={`for field in args.fields {
     if field.ident.is_none() {
-        env.logr.emit_error(field.span(), "Only named fields supported");
+                    env.logr.emit_error(field.span(), "Only named fields supported");
     }
 }
-env.finish(generate_output())
-```
+env.finish(generate_output())`} />
 
 One broken item reports **every** problem in a single pass — the UX that `proc-macro-error2` pioneered, without the abandoned dependency.
 
@@ -52,7 +48,7 @@ The workspace style guide, enforced by snapshot tests, keeps every diagnostic pr
 | Start with the failure | `Failed to read constants file` |
 | `Failed to <verb> ...` for read/parse failures | `Failed to parse macro_impl_src` |
 | `Only <thing> supported` for constraints | `Only named struct supported` |
-| ``Unsupported <thing> `<value>` `` for unknown variants | ``Unsupported MacroKind `Nope` `` |
+| ``Unsupported `<thing>` `<value>` `` for unknown variants | ``Unsupported MacroKind `Nope` `` |
 | Backtick identifiers and paths | ``Unresolved const ident `NOPE` `` |
 | No trailing period | ...follows rustc convention |
 
