@@ -6,14 +6,13 @@
   "scripts": {
     "dev": "astro dev",
     "start": "astro dev",
-    "build": "pnpm og:compile && astro build",
+    "build": "astro build",
     "postbuild": "node scripts/generate-llms.mjs",
     "preview": "astro preview",
     "astro": "astro",
     "check": "astro check",
     "lint": "markdownlint-cli2 \"src/content/docs/**/*.{md,mdx}\"",
-    "qa": "node scripts/qa-screenshots.mjs",
-    "og:compile": "./node_modules/.bin/esbuild src/og-render.jsx --loader:.jsx=jsx --jsx=automatic --format=esm --outfile=src/og-render.mjs"
+    "qa": "node scripts/qa-screenshots.mjs"
   },
   "dependencies": {
     "@astrojs/check": "0.9.12",
@@ -26,18 +25,17 @@
     "linkedom": "^0.18.0"
   },
   "devDependencies": {
-    "@fontsource/roboto": "^5.3.0",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "astro-takumi": "github:elcoosp/astro-takumi#c4b8331abb1dc2f157d62fba634eeb17f5e689cd",
-    "esbuild": "^0.28.2",
     "jsdom": "26.1.0",
     "markdownlint-cli2": "0.20.0",
     "node-html-parser": "7.1.0",
     "playwright": "1.58.2",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
-    "typescript": "6.0.3"
+    "typescript": "6.0.3",
+    "@elcoosp/docs-toolkit": "github:elcoosp/docs-toolkit#dd2fa6d7981534c0e3b230f4eed59e38bd51e4e5"
   },
   "pnpm": {
     "overrides": {
