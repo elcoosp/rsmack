@@ -1,2 +1,4 @@
 User-agent: *
 Allow: /
+
+Sitemap: https://rsmack.vercel.app/sitemap-index.xml
