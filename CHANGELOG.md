@@ -206,13 +206,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Bug Fixes
 
-- Mising version on dep
+- Missing version on dep
 
 ## [0.9.0] - 2025-11-07
 
 ### Bug Fixes
 
-- Mising descriptio & license
+- Missing description & license
 
 ## [0.8.0] - 2025-11-07
 
@@ -252,7 +252,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Miscellaneous Tasks
 
-- Rm test from releaase workflow
+- Rm test from release workflow
 
 - V0.3.0
 

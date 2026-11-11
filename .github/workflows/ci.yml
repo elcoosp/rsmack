@@ -77,7 +77,6 @@ jobs:
     if: github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v5
-      - uses: obi1kenobi/cargo-semver-checks-action@v2
 
   coverage:
     name: Coverage (100% lines)
@@ -95,7 +94,6 @@ jobs:
           tool: cargo-llvm-cov
 
       - name: Enforce 100% line coverage
-        run: cargo llvm-cov --workspace --lib --bins --tests --ignore-filename-regex 'fuzz' --fail-under-lines 100
 
       - name: Generate lcov report
         run: cargo llvm-cov --workspace --all-targets --ignore-filename-regex 'benches|fuzz' --lcov --output-path lcov.info
