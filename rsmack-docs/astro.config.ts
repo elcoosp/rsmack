@@ -5,6 +5,7 @@ import starlightHeadingBadges from 'starlight-heading-badges';
 
 
 export default await defineDocsConfig({
+  llmsTxt: {},
   changelog: { repo: 'elcoosp/rsmack' },
   site: 'https://rsmack.vercel.app',
   domain: 'rsmack.vercel.app',
