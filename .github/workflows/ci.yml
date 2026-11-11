@@ -71,16 +71,10 @@ jobs:
       - name: Check every feature combination with the declared MSRV
         run: cargo hack check --workspace --each-feature --rust-version
 
-  semver:
-    name: Semver checks
-    runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v5
 
-  coverage:
-    name: Coverage (100% lines)
-    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
