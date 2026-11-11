@@ -5,6 +5,7 @@
 
 Routes are relative to the site root. Rendered pages are plain HTML.
 - [rsmack — the Rust proc-macro factory | rsmack](//): Write the exec function, get a documented macro. edoc, wrap, seanum, folder_iso_struct, and megamac in one dependency.
+- [rsmack changelog | rsmack](/changelog/): The Rust proc-macro factory: write the exec function, get a documented macro. edoc, wrap, seanum, folder_iso_struct, and megamac.
 - [Architecture | rsmack](/explanation/architecture/): How the rsmack workspace is organized — the facade crate, five generated macros, the megamac factory, and the rsmack-utils toolkit.
 - [Diagnostics philosophy | rsmack](/explanation/diagnostics-philosophy/): Why rsmack macros never panic — the syn::Error-based Logr design, the style guide, fuzzing, and trybuild snapshots.
 - [The payload protocol | rsmack](/explanation/payload-protocol/): Why a megamac macro's exec signature is its configuration — darling versus raw payloads, derive macros, and inference rules.
