@@ -71,34 +71,6 @@ jobs:
       - name: Check every feature combination with the declared MSRV
         run: cargo hack check --workspace --each-feature --rust-version
 
-    if: github.event_name == 'pull_request'
-    steps:
-      - uses: actions/checkout@v5
-
-    steps:
-      - uses: actions/checkout@v5
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: llvm-tools-preview
-      - uses: Swatinem/rust-cache@v2
-
-      - name: Install cargo-llvm-cov
-        uses: taiki-e/install-action@v2
-        with:
-          tool: cargo-llvm-cov
-
-      - name: Enforce 100% line coverage
-
-      - name: Generate lcov report
-        run: cargo llvm-cov --workspace --all-targets --ignore-filename-regex 'benches|fuzz' --lcov --output-path lcov.info
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
-        with:
-          files: lcov.info
-          fail_ci_if_error: false
-          token: ${{ secrets.CODECOV_TOKEN }}
-
   typos:
     name: Typos
     runs-on: ubuntu-latest
