@@ -1,4 +1,5 @@
 import { defineDocsConfig } from '@elcoosp/docs-toolkit/config';
+import starlightChangelogs from 'starlight-changelogs';
 import starlightLinksValidator from 'starlight-links-validator';
 import starlightImageZoom from 'starlight-image-zoom';
 import starlightHeadingBadges from 'starlight-heading-badges';
@@ -75,6 +76,6 @@ export default await defineDocsConfig({
                                         ]
                                 },
                         ],
-                        plugins: [starlightLinksValidator(), starlightImageZoom(), starlightHeadingBadges()]
+                        plugins: [ starlightChangelogs(), starlightLinksValidator(), starlightImageZoom(), starlightHeadingBadges()]
                 },
 });
