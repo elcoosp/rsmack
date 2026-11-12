@@ -1,4 +1,6 @@
 [package]
+documentation = "https://rsmack.vercel.app"
+
 readme = "../../README.md"
 name = "rsmack-fs"
 keywords = ["macro", "fs", "lisp", "metaprogramming", "codegen"]

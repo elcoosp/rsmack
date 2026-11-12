@@ -1,4 +1,6 @@
 [package]
+documentation = "https://rsmack.vercel.app"
+
 readme = "../../README.md"
 name = "rsmack-seanum"
 keywords = ["macro", "lisp", "metaprogramming", "codegen", "proc-macro"]

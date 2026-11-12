@@ -1,4 +1,6 @@
 [package]
+documentation = "https://rsmack.vercel.app"
+
 readme = "../../README.md"
 name = "rsmack-edoc"
 keywords = ["macro", "doc", "lisp", "metaprogramming", "codegen"]

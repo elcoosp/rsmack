@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="docs/logo.png" alt="rsmack Logo" width="200"/>
+  <img src="https://cdn.jsdelivr.net/gh/elcoosp/rsmack@main/docs/logo.png" alt="rsmack Logo" width="200"/>
   <p>
     <strong>The Rust proc-macro factory: write the <code>exec</code> function, get a documented macro.</strong><br/>
     One <code>cargo add rsmack</code> for every macro: <code>edoc</code> (docs from constants, with typed
@@ -38,7 +38,7 @@ selection, documentation extraction, error plumbing, file codegen — is handled
 framework.
 
 > [!TIP]
-> Look at [`packages/rsmack-example-macros`](packages/rsmack-example-macros): it is a
+> Look at [`packages/rsmack-example-macros`](https://github.com/elcoosp/rsmack/tree/main/packages/rsmack-example-macros): it is a
 > living example crate exercising every macro kind (including a raw-payload DSL macro)
 > end to end in the test suite.
 
@@ -232,8 +232,8 @@ process (memoized by `(path, mtime, len)`).
 - **non-fatal** problems are collected with `Logr::emit_error` and flushed at the end of
   the expansion, so one bad field does not hide the others;
 - every message is prefixed `#[<crate>::<macro>]` — see
-  [`docs/ERROR_STYLE.md`](docs/ERROR_STYLE.md) for the message style guide and
-  [`packages/rsmack-ui-tests`](packages/rsmack-ui-tests) for the rustc-output snapshots.
+  [`docs/ERROR_STYLE.md`](https://github.com/elcoosp/rsmack/blob/main/docs/ERROR_STYLE.md) for the message style guide and
+  [`packages/rsmack-ui-tests`](https://github.com/elcoosp/rsmack/tree/main/packages/rsmack-ui-tests) for the rustc-output snapshots.
 
 There is no unwinding, no panic catching, and the generated code carries no
 `#[proc_macro_error]` attribute. The parsers are fuzzed (`fuzz/`) to keep it that way.
@@ -255,7 +255,7 @@ There is no unwinding, no panic catching, and the generated code carries no
   opt-level = 3
   ```
 
-Measured numbers live in [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md).
+Measured numbers live in [`docs/BENCHMARKS.md`](https://github.com/elcoosp/rsmack/blob/main/docs/BENCHMARKS.md).
 
 ## Development
 
@@ -280,9 +280,9 @@ bacon                                         # watch mode (see bacon.toml)
 - **Releases**: pushing a `v*.*.*` tag runs the release workflow: validation →
   [`git-cliff`](https://git-cliff.org) changelog → ordered `crates.io` publishing →
   GitHub release with generated notes. The changelog itself lives in
-  [`CHANGELOG.md`](CHANGELOG.md).
-- **Dependency updates**: [`renovate`](renovate.json) keeps the manifests fresh.
+  `CHANGELOG.md`.
+- **Dependency updates**: `renovate` keeps the manifests fresh.
 
 The v2 design record (brainstorm, breaking decisions, perf ledger) lives in
-[`docs/DESIGN_v2.md`](docs/DESIGN_v2.md); the remaining roadmap is maintained in
-[`docs/IMPROVEMENTS.md`](docs/IMPROVEMENTS.md).
+[`docs/DESIGN_v2.md`](https://github.com/elcoosp/rsmack/blob/main/docs/DESIGN_v2.md); the remaining roadmap is maintained in
+[`docs/IMPROVEMENTS.md`](https://github.com/elcoosp/rsmack/blob/main/docs/IMPROVEMENTS.md).
