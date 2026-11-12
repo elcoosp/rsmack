@@ -1,5 +1,6 @@
 [package]
 name = "rsmack"
+keywords = ["macro", "lisp", "metaprogramming", "codegen", "proc-macro"]
 version.workspace = true
 edition.workspace = true
 license.workspace = true

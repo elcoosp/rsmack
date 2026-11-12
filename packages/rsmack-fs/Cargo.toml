@@ -1,5 +1,6 @@
 [package]
 name = "rsmack-fs"
+keywords = ["macro", "fs", "lisp", "metaprogramming", "codegen"]
 version.workspace = true
 edition.workspace = true
 license.workspace = true
