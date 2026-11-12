@@ -35,12 +35,12 @@ export default await defineDocsConfig({
                                 {
                                         label: 'Start',
                                         items: [
-                                                { label: 'Overview', link: '/' },
+                                                { label: 'Overview', translations: { fr: 'Aperçu' }, link: '/' },
                                                 { label: 'Getting started', slug: 'tutorials/getting-started' },
                                         ]
                                 },
                                 {
-                                        label: 'Guides',
+                                        label: 'Guides', translations: { fr: 'Guides' },
                                         items: [
                                                 { label: 'Docs from constants (edoc)', slug: 'guides/docs-from-constants' },
                                                 { label: 'Wrap field types', slug: 'guides/wrap-field-types' },
@@ -52,7 +52,7 @@ export default await defineDocsConfig({
                                         ]
                                 },
                                 {
-                                        label: 'Reference',
+                                        label: 'Reference', translations: { fr: 'Référence' },
                                         items: [
                                                 { slug: 'reference/edoc' },
                                                 { slug: 'reference/wrap' },
@@ -65,7 +65,7 @@ export default await defineDocsConfig({
                                         ]
                                 },
                                 {
-                                        label: 'Explanation',
+                                        label: 'Explanation', translations: { fr: 'Explication' },
                                         items: [
                                                 { slug: 'explanation/architecture' },
                                                 { slug: 'explanation/payload-protocol' },
