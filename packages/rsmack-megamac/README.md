@@ -65,5 +65,5 @@ crates cannot be imported as normal modules).
 > ```
 
 See the [workspace README](https://github.com/elcoosp/rsmack) for the full documentation,
-and [`rsmack-example-macros`](../rsmack-example-macros) for living examples of every
+and [`rsmack-example-macros`](https://github.com/elcoosp/rsmack/tree/main/rsmack-example-macros) for living examples of every
 macro kind (including a raw-payload DSL macro).
