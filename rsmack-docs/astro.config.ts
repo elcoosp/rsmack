@@ -36,7 +36,7 @@ export default await defineDocsConfig({
                                         label: 'Start',
                                         items: [
                                                 { label: 'Overview', translations: { fr: 'Aperçu' }, link: '/' },
-                                                { label: 'Getting started', slug: 'tutorials/getting-started' },
+                                                { label: 'Getting started', translations: { fr: "Commencer" }, slug: 'tutorials/getting-started' },
                                         ]
                                 },
                                 {
