@@ -1,4 +1,5 @@
 [package]
+readme = "../../README.md"
 name = "rsmack-fs"
 keywords = ["macro", "fs", "lisp", "metaprogramming", "codegen"]
 version.workspace = true
