@@ -3,7 +3,6 @@ import starlightLinksValidator from 'starlight-links-validator';
 import starlightImageZoom from 'starlight-image-zoom';
 import starlightHeadingBadges from 'starlight-heading-badges';
 
-
 export default await defineDocsConfig({
   llmsTxt: {},
   changelog: { repo: 'elcoosp/rsmack' },
@@ -31,7 +30,7 @@ export default await defineDocsConfig({
                                 baseUrl: 'https://github.com/elcoosp/rsmack/edit/main/'
                         },
                         // Zero-config Pagefind search ships with Starlight and stays enabled.
-                        defaultLocale: 'en',
+
                         sidebar: [
                                 {
                                         label: 'Start',
