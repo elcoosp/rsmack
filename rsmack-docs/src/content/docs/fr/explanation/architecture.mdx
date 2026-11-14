@@ -1,0 +1,52 @@
+---
+title: Architecture
+description: "Comment l'espace de travail rsmack est organisé — la crate façade, cinq macros générées, la fabrique megamac, et la boîte à outils rsmack-utils."
+type: explanation
+---
+
+import { Code, FileTree, LinkCard } from '@astrojs/starlight/components';
+
+L'espace de travail rsmack est une pile de neuf crates Cargo : cinq macros orientées utilisateur, une façade, la fabrique qui les génère, la boîte à outils que tout partage, et deux crates de développement uniquement. Comprendre cette stratification explique pourquoi un auteur de macro a besoin à la fois de `rsmack-megamac` et de `rsmack-utils`.
+
+<FileTree>
+	- packages
+		- rsmack — façade : chaque macro derrière une seule dépendance conditionnée par fonctionnalité
+		- rsmack-edoc — docs depuis des constantes (généré par megamac)
+		- rsmack-wrap — enveloppes de type de champ (généré par megamac)
+		- rsmack-seanum — énumérations actives SeaORM (généré par megamac)
+		- rsmack-fs — miroir de dossier (généré par megamac)
+		- rsmack-megamac — la fabrique de macros elle-même
+		- rsmack-utils — ExecEnv, Logr, pilotes d'entrée, aides fs
+		- rsmack-example-macros — crate exemple vivante (non publiée)
+		- rsmack-ui-tests — instantanés de diagnostic trybuild (non publiés)
+</FileTree>
+
+## La façade
+
+La crate `rsmack` est un shim de ré-export. Chaque macro se trouve derrière une fonctionnalité, et `full` (le défaut) les active toutes :
+
+<Code lang="toml" code={`[features]
+default = ["full"]
+full = ["edoc", "wrap", "seanum", "fs", "megamac"]`} />
+
+Dépendre de `rsmack` vous donne chaque macro via une seule surface d'import ; dépendre des crates autonomes (`rsmack-edoc`, `rsmack-wrap`, ...) garde les temps de compilation bas quand vous n'avez besoin que d'une macro.
+
+## Chaque macro livrée est générée par megamac
+
+Les macros livrées n'écrivent pas leurs points d'entrée à la main. Le `src/lib.rs` de chaque crate contient une déclaration comme :
+
+<Code lang="rust" code={`megamac!(kind = Attr, name = edoc, doc = "readme");`} />
+
+La fonction d'entrée, l'analyse de la charge utile et la documentation générée viennent toutes de la même machinerie que vous utilisez pour écrire vos propres macros. Quand la fabrique s'améliore — docs plus riches, mémoïsation plus rapide — chaque macro livrée hérite de l'amélioration.
+
+## Pourquoi un auteur de macro a besoin de deux dépendances
+
+Les crates proc-macro ne peuvent pas être importées comme de simples modules, donc le code que `megamac!` génère doit nommer ses dépendances par chemin. Les points d'entrée générés appellent les pilotes `rsmack_utils::exec::*` et `exec` reçoit `rsmack_utils::megamac::ExecEnv` — c'est pourquoi écrire avec `megamac` exige une dépendance directe à `rsmack-utils` à côté de `rsmack-megamac`.
+
+## Infrastructure de qualité
+
+L'espace de travail impose sa posture mécaniquement : `clippy::pedantic` dénié sans aucun allow, 100 % de couverture de lignes via `cargo-llvm-cov`, chaque chemin d'erreur figé par `trybuild`, les parseurs fuzzés avec `cargo fuzz`, des benchmarks criterion par macro, des journaux de modification `git-cliff`, et des versions publiées sur crates.io à chaque tag. La [philosophie de diagnostic](/explanation/diagnostics-philosophy/) explique la garantie de non-panique derrière tout cela.
+
+## Étapes suivantes
+
+<LinkCard title="Le protocole de charge utile" description="Comment une signature exec sélectionne la forme du point d'entrée." href="/explanation/payload-protocol/" />

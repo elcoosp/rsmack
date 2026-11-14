@@ -1,0 +1,47 @@
+---
+title: Référence des messages d'erreur
+description: "Chaque diagnostic rustc que les macros livrées émettent, avec le format de préfixe #[crate::macro] et le catalogue figé par instantanés."
+type: reference
+---
+
+import { Code, LinkCard } from '@astrojs/starlight/components';
+
+Chaque diagnostic d'une macro rsmack est un `compile_error!` — jamais une panique. Le style de message est imposé par des instantanés `trybuild` dans `packages/rsmack-ui-tests`, donc un changement de formulation accidentel échoue à la revue.
+
+## Format du message
+
+<Code lang="text" code={`error: #[<crate>::<macro>] <message>`} />
+
+Préfixes réels : `#[rsmack_edoc::edoc]`, `#[rsmack_wrap::wrap]`, `#[rsmack_seanum::seanum]`, `#[rsmack_fs::folder_iso_struct]`, `#[rsmack_megamac::megamac]`. Les spans pointent vers les jetons fautifs, ou vers l'invocation entière pour les fatales au site d'appel.
+
+## Règles de style de message
+
+1. Commencer par l'échec — pas de décoration `Error:`, pas d'emoji.
+2. Verbes cohérents : ``Failed to `<verb>` ...`` pour les échecs de lecture/analyse, ``Only `<thing>` supported`` pour les contraintes, ``Unsupported `<thing>` `<value>` `` pour les variantes inconnues, ``Invalid `<thing>` ...`` pour les problèmes de construction de valeur.
+3. Identifiants, chemins et valeurs entre backticks ; ne jamais citer des phrases entières.
+4. Pas de point final, suivant la convention rustc.
+5. Fatale quand l'expansion n'a pas de sens (renvoyée via `ExecEnv::finish_result`) ; collectée quand une sortie utilisable existe toujours (vidée par `Logr::finish`) pour que tous les problèmes d'un élément rapportent en une passe.
+
+## Catalogue
+
+Diagnostics figés par instantanés depuis `packages/rsmack-ui-tests` :
+
+| Macro | Message après le préfixe | Déclencheur |
+| --- | --- | --- |
+| `edoc` | ``Failed to read constants file `&lt;path&gt;`: No such file or directory (os error 2)`` | `from` pointe vers un fichier manquant |
+| `edoc` | ``Unresolved const ident `NOPE` `` | La référence ne matche rien |
+| `edoc` | `Only Tuple supported, maybe you are missing a second element` | La charge utile n'est pas un tuple |
+| `edoc` | ``Unsupported const macro `vec!` `` | L'élément utilise une macro non supportée |
+| `edoc` | ``Ambiguous const `NAME`, qualify the path: `a::NAME`, `b::NAME` `` | Le nom nu matche plusieurs constantes |
+| `megamac` | ``Failed to get macro_impl_src of does_not_exist at `&lt;path&gt;`: No such file or directory (os error 2)`` | `impls/&lt;name&gt;.rs` manquant |
+| `megamac` | ``Failed to parse macro_impl_src broken, this may happen for no real reason in your IDE, check that your project still builds with cargo: `` `&lt;debug&gt;`` | Fichier d'implémentation non analysable |
+| `megamac` | ``Unsupported MacroKind `Nope`, expected `Attr`, `Func` or `Derive` `` | `kind` invalide |
+| `wrap` | `Only named struct supported` | Struct tuple ou unité |
+| `folder_iso_struct` | `Only named struct supported` | Struct tuple ou unité |
+| `seanum` | ``Failed to generate TryFrom: variant `Plain` has fields, only unit variants are supported with integer `rs_type` `` | Variante non unité avec `rs_type` entier |
+
+D'autres messages collectés (non figés) suivent les mêmes verbes — par exemple ``Cyclic const dependency involving `X` ``, ``Duplicate variant value `N`: discriminants must be unique for the generated `TryFrom` ``, et ``Failed to generate the migration helper: db_type `X` has no `ColumnDef` mapping``.
+
+## Étapes suivantes
+
+<LinkCard title="Gérer les erreurs de macro" description="Écrivez des diagnostics dans ce style pour vos propres macros megamac." href="/guides/handle-errors/" />

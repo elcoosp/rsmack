@@ -1,0 +1,91 @@
+---
+title: Référence seanum
+description: "Référence complète de la macro d'attribut seanum — options, dérivations par défaut, discriminants entiers, cas de rename_all et helper de migration."
+type: reference
+---
+
+import { Badge, Code, LinkCard } from '@astrojs/starlight/components';
+
+`seanum` est une macro d'attribut — générée par `megamac!(kind = Attr, name = seanum, doc = "readme")` — qui génère un `ActiveEnum` SeaORM depuis une énumération Rust simple. Chemin de crate : `rsmack_seanum` (façade : `rsmack::seanum`, fonctionnalité `seanum`).
+
+## Signature
+
+<Code lang="rust" code={`#[seanum(
+    rs_type = "String",
+    db_type = "String(sea_orm::sea_query::StringLen::None)",
+    rename_all = "snake_case",
+    derives("::serde::Serialize", "::serde::Deserialize")
+)]
+pub enum SwitchAction { ... }`} />
+
+## Arguments d'élément
+
+### rs_type :badge[required]
+
+- **Type :** `syn::Ident`
+- **Signification :** le type Rust des valeurs d'énumération (`"String"`, `"i32"`, ...)
+
+### db_type :badge[required]
+
+- **Type :** littéral de chaîne
+- **Signification :** le type de colonne SeaORM, transmis tel quel à `#[sea_orm(rs_type = ..., db_type = ...)]`
+
+### derives :badge[optional]{variant="note"}
+
+- **Type :** liste de littéraux de chaîne, analysés comme chemins
+- **Défaut :** vide
+- **Signification :** dérivations supplémentaires ajoutées après les défauts ; les entrées invalides rapportent `Invalid 'derives' entry: {e}`
+
+### migration :badge[optional]{variant="note"}
+
+- **Type :** `bool`
+- **Défaut :** `false`
+- **Signification :** génère un helper `migration_column_def()` pour `sea-orm-migration`
+
+### rename_all :badge[optional]{variant="note"}
+
+- **Type :** littéral de chaîne — l'un de `snake_case`, `camelCase`, `PascalCase`, `kebab-case`, `SCREAMING_SNAKE_CASE`, `lowercase`, `UPPERCASE`
+- **Défaut :** aucun — les valeurs gardent leurs noms Rust
+- **Signification :** normalise chaque valeur non renommée ; un cas inconnu est fatal
+
+### enum_name :badge[optional]{variant="note"}
+
+- **Type :** littéral de chaîne
+- **Défaut :** le nom d'énumération en snake_case
+- **Signification :** surcharge le nom de table transmis à `#[sea_orm(enum_name = ...)]`
+
+## Arguments de variante
+
+### rename :badge[optional]{variant="note"}
+
+- **Type :** littéral de chaîne sur une variante : `#[seanum(rename = "send_email")]`
+- **Signification :** surcharge `rename_all` pour cette variante ; consommé depuis la sortie
+
+## Dérivations par défaut
+
+`Clone`, `Debug`, `PartialEq`, `Eq`, `Hash`, `::sea_orm::EnumIter`, `::sea_orm::DeriveActiveEnum` — minimales par conception ; `serde`/`fake` sont opt-in via `derives(...)`, jamais des dépendances cachées.
+
+## Comportement des rs_type entiers
+
+Quand `rs_type` est l'un de `i8`–`i64`, `u8`–`u64`, `isize` ou `usize` :
+
+- L'énumération gagne `#[repr(rs_type)]`.
+- Chaque variante gagne `#[sea_orm(num_value = N)]`.
+- Un `TryFrom<rs_type>` basé valeur est généré avec `type Error = ::sea_orm::DbErr`.
+- Les discriminants explicites sont honorés comme littéraux entiers (`A = 10, B` continue depuis `11` ; un `-` initial est accepté).
+- Les valeurs en double sont collectées comme `Duplicate variant value 'N': discriminants must be unique for the generated 'TryFrom'` et le `TryFrom` est sauté.
+- Les variantes non unité avec un `rs_type` entier rapportent `Failed to generate TryFrom: variant 'X' has fields, only unit variants are supported with integer 'rs_type'` et sautent le `TryFrom`.
+
+Les valeurs `rs_type` de chaîne reçoivent à la place `#[sea_orm(string_value = "...")]` par variante, sans `TryFrom` ni `#[repr]`.
+
+## Helper de migration
+
+`migration = true` émet `impl Enum { pub fn migration_column_def() -> ::sea_orm_migration::sea_query::ColumnDef }`. Le `db_type` se mappe à la méthode `ColumnDef` via cette table :
+
+`String` → `string`, `Text` → `text`, `TinyInteger` → `tiny_integer`, `SmallInteger` → `small_integer`, `Integer` → `integer`, `BigInt` → `big_integer`, `TinyUnsigned` → `tiny_unsigned`, `SmallUnsigned` → `small_unsigned`, `Unsigned` → `unsigned`, `BigUnsigned` → `big_unsigned`, `Float` → `float`, `Double` → `double`, `Boolean` → `boolean`, `Date` → `date`, `DateTime` → `date_time`, `Json` → `json`, `JsonBinary` → `json_binary`.
+
+Un `db_type` non mappé — y compris les valeurs paramétrées telles que `"String(sea_orm::sea_query::StringLen::None)"` — rapporte `Failed to generate the migration helper: db_type 'X' has no 'ColumnDef' mapping`.
+
+## Étapes suivantes
+
+<LinkCard title="Énumérations SeaORM (seanum)" description="Un guide orienté tâche avec exemples chaîne et entier." href="/guides/seaorm-enums/" />

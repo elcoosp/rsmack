@@ -1,0 +1,76 @@
+---
+title: Documenter depuis des constantes (edoc)
+description: "Générez des docs de champs, de variantes et d'éléments depuis des littéraux de chaîne, des références constantes et des expressions const avec edoc."
+type: how-to
+---
+
+import { Aside, Code, LinkCard, Steps } from '@astrojs/starlight/components';
+
+Utilisez [`edoc`](/reference/edoc/) quand la documentation doit rester synchronisée avec le code : chaînes de version depuis des constantes, numéros de build depuis `env!`, ou tags combinés depuis `concat!`. `edoc` évalue les tuples `#[edoc((...))]` en vrais attributs `#[doc]` sur les champs de struct, les variantes d'énumération et l'élément lui-même.
+
+## Pointer edoc vers votre fichier de constantes
+
+L'argument `from` nomme le chemin de module qui se mappe à un fichier sous le répertoire `src/` de votre crate — `::` devient `/` et `.rs` est ajouté :
+
+<Code lang="rust" code={`#[edoc(from = consts)]          // lit src/consts.rs
+#[edoc(from = impls::doc_consts)] // lit src/impls/doc_consts.rs`} />
+
+`self` n'est pas traité comme un segment de chemin — écrivez le chemin relatif à `src/` sans lui.
+
+## Évaluer des tuples d'éléments
+
+Annotez les champs ou les variantes avec un tuple d'éléments. Chaque élément est un littéral de chaîne, une référence constante, ou une expression const :
+
+<Code lang="rust" code={`use rsmack_edoc::edoc;
+
+#[edoc(from = consts)]
+struct Client {
+    #[edoc(("Client ", APP, " tag ", TAG, " build ", 2 * 21))]
+    name: String,
+}`} />
+
+Les types d'éléments supportés incluent :
+
+- Littéraux : `&str`, entiers, `f64`, `bool`, `char`, et chaînes d'octets
+- Opérateurs arithmétiques, bit à bit, de décalage, logiques et de comparaison
+- Casts avec sémantique rustc (`300 as u8` revient à `44`, float-vers-int sature)
+- Les macros `concat!`, `env!` et `option_env!`
+
+## Référencer les constantes par chemin complet ou nom nu
+
+Une référence se résout contre le chemin de module complet d'abord. Un nom nu retombe sur une recherche à l'échelle de l'espace de travail — les noms uniques se résolvent, les noms ambigus rapportent chaque candidat :
+
+<Code lang="rust" code={`#[edoc(("Qualified: ", impls::doc_consts::APP))]
+#[edoc(("Bare: ", APP))] // se résout quand APP est unique dans le fichier`} />
+
+L'ambiguïté produit `Ambiguous const 'NAME', qualify the path: 'a::NAME', 'b::NAME'` — voir la [référence des messages d'erreur](/reference/error-messages/).
+
+## Documenter les variantes d'énumération et l'élément lui-même
+
+Les tuples de variantes fonctionnent comme les tuples de champs. Pour l'élément lui-même, ajoutez un attribut `#[edoc((...))]` séparé à côté de `from` :
+
+<Code lang="rust" code={`#[edoc(from = consts)]
+#[edoc(("The ", APP, " client"))]
+enum State {
+    #[edoc(("Idle since ", TAG))]
+    Idle,
+    Busy,
+}`} />
+
+<Aside kind="note">
+	Les commentaires de doc préexistants sur les éléments annotés sont écrasés par les docs générées ; les attributs comme `#[derive(...)]` et `#[serde(...)]` sont préservés.
+</Aside>
+
+## Garder un fichier de constantes par crate
+
+La résolution est mémoïsée par fichier avec un cache global au processus indexé par `(path, mtime, len)`. Annoter N éléments contre un seul `src/consts.rs` coûte une analyse ; chaque utilisation du fichier en cache ré-émet les éventuels problèmes non fatals qu'il contient, donc rien ne se cache.
+
+## Vérifier le résultat
+
+<Code lang="shell" code={`cargo doc --no-deps --open`} />
+
+Chaque tuple évalué apparaît comme texte rendu sur la page du champ, de la variante ou de l'élément.
+
+## Étapes suivantes
+
+<LinkCard title="Référence edoc" description="La grammaire complète des expressions, les règles de résolution et la table d'erreurs." href="/reference/edoc/" />

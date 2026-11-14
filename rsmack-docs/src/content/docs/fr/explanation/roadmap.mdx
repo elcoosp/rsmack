@@ -1,0 +1,41 @@
+---
+title: Feuille de route
+description: "Ce que rsmack 1.0 a livré, ce que la refonte v2 a délibérément cassé, et ce qui reste au backlog d'amélioration."
+type: explanation
+---
+
+import { LinkCard, Badge } from '@astrojs/starlight/components';
+
+La version 1.0.0 a clos la refonte v2 consignée dans `docs/DESIGN_v2.md` : *« tout développeur Rust écrit une proc-macro de qualité production, entièrement documentée, sans panique, en moins de vingt lignes, et installe chaque macro livrée avec un seul `cargo add rsmack`. »* Cette page résume ce qui a été livré et ce que le dépôt suit comme travail restant dans `docs/IMPROVEMENTS.md`.
+
+## Livré dans 1.0.0
+
+- Protocole de charge utile piloté par la signature avec l'option `doc = "none"` et des docs générées plus riches
+- La crate façade `rsmack`
+- Mise en cache des fichiers d'implémentation de `megamac` avec le gain d'expansion à chaud d'environ 90×
+- Évaluation const typée de `edoc`, constantes conscientes du chemin, docs de variantes d'énumération et de niveau d'élément
+- `wrap` acceptant tout type (le chemin d'erreur de type non supporté de la v1 a été supprimé)
+- Dérivations par défaut minimales de `seanum`, discriminants explicites avec détection de doublons, `rename_all`, `enum_name`
+- Émission inline de `folder_iso_struct` — pas de saveur script de build dans la macro elle-même
+- `ExecEnv::new` remplaçant le builder bon, `staleness_key` partagé
+
+<Badge variant="caution" text="Pas de compatibilité ascendante" /> La refonte v2 a délibérément cassé la surface d'API 0.x : changements de signature, suppression de la charge utile de dérive, et le constructeur `ExecEnv::new` sont tous consignés dans le journal de modification 1.0.0.
+
+## Backlog restant
+
+| Zone | Élément | Impact | Effort |
+| --- | --- | --- | --- |
+| Performance | Mettre en cache les lectures **source** des fichiers d'implémentation megamac | Bas | Bas |
+| Performance | Précalculer `pascal_options` par processus | Bas | Bas |
+| Modularité | Découper `rsmack-utils` par préoccupation | Moyen | Moyen |
+| Fuzzing | Fuzzing planifié en CI | Moyen | Moyen |
+| `edoc` | Évaluation const plus riche — structs, `include!` | Bas | Élevé |
+| `seanum` | Discriminants à expression const | Bas | Moyen |
+| `megamac` | Expansion playground des **invocations** de macro (nécessite cargo-expand) | Moyen | Élevé |
+| `folder_iso_struct` | Dérivations par struct imbriquée | Bas | Bas |
+
+Le découpage d'utils est reporté parce que le code généré intègre des chemins `rsmack_utils::` — un découpage physique casserait chaque crate publiée d'un coup.
+
+## Étapes suivantes
+
+<LinkCard title="Architecture" description="Comment les crates de l'espace de travail se superposent." href="/explanation/architecture/" />

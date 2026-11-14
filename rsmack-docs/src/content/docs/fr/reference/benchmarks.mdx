@@ -1,0 +1,46 @@
+---
+title: Référence des benchmarks
+description: "Benchmarks d'expansion criterion pour chaque macro, avec le gain de mémoïsation megamac ×90 et les commandes de repro."
+type: reference
+---
+
+import { Aside, Code, LinkCard } from '@astrojs/starlight/components';
+
+Les benchmarks d'expansion tournent avec [criterion](https://github.com/bheisler/criterion.rs) 0.8.2 (moyenne de 100 échantillons, Rust 1.99, runners de classe `ubuntu-latest`). Reproduisez avec :
+
+<Code lang="shell" code={`cargo bench --workspace`} />
+
+## Résultats
+
+| Benchmark | Moyenne | Notes |
+| --- | --- | --- |
+| `utils/exec_env_build` | 37 ns | `ExecEnv::new` |
+| `utils/finish_result_ok` | 161 ns | surcoût du chemin heureux du pilote |
+| `utils/logr_collect_4_errors` | 4,1 µs | collecter 4 diagnostics + vider |
+| `edoc/const_eval_expression` | 4,6 µs | évaluation typée de `concat!("v", 1 + 2, "-", 3 * 4)` |
+| `edoc/consts_parse_and_eval` | 28 µs | analyse + éval à froid du fichier de constantes |
+| `edoc/exec_missing_consts_file` | 27 µs | chemin d'erreur |
+| `edoc/exec_warm_consts_cache` | 63 µs | expansion complète à 8 champs, constantes mémoïsées |
+| `wrap/exec_4_fields` | 18 µs | |
+| `wrap/exec_24_fields` | 73 µs | environ 3 µs par champ, linéaire |
+| `seanum/exec_8_variants_string` | 23 µs | |
+| `seanum/exec_8_variants_integer_migration` | 55 µs | inclut `TryFrom` + helper de migration |
+| `megamac/exec_func_generation` | 15 µs | à chaud, analyse d'implémentation en cache |
+| `megamac/exec_attr_generation` | 18 µs | à chaud, analyse d'implémentation en cache |
+
+## Ce que les chiffres vous apportent
+
+- **Le gain de mémoïsation :** la course de référence 0.20 mesurait `megamac/exec_*_generation` à environ 1,35 ms par expansion. Le mémo de fichier d'implémentation amène les expansions à chaud à 15–18 µs — une amélioration d'environ **90×**, très visible dans les re-vérifications de rust-analyzer et les boucles de test.
+- **Fichiers de constantes partagés :** les constantes mémoïsées économisent `N × 28 µs` pour N structs annotant contre un seul `src/consts.rs`.
+- **Les diagnostics sont effectivement gratuits :** environ 160 ns de surcoût du pilote plus environ 4 µs pour collecter et vider quatre erreurs.
+
+<Aside kind="tip" title="Itération plus rapide dans votre propre crate">
+	Les recompilations de proc-macros deviennent plus rapides quand les dépendances sont pré-optimisées. Ajoutez ceci à votre `Cargo.toml` :
+
+<Code lang="toml" code={`  [profile.dev.package."*"]
+  opt-level = 3`} />
+</Aside>
+
+## Étapes suivantes
+
+<LinkCard title="Performance" description="Pourquoi les caches et l'évaluateur typé sont rapides." href="/explanation/performance/" />

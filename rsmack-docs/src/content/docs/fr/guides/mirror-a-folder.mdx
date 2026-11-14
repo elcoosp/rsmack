@@ -1,0 +1,68 @@
+---
+title: Refléter un dossier
+description: "Reflétez un dossier de modules Rust dans une struct inline à la compilation avec folder_iso_struct — sans script de build."
+type: how-to
+---
+
+import { Aside, Code, FileTree, LinkCard } from '@astrojs/starlight/components';
+
+Utilisez [`folder_iso_struct`](/reference/folder-iso-struct/) quand une struct doit refléter un dossier de modules : niveaux de jeu, définitions d'écran, registres de plugins. Le dossier est scanné à l'expansion de la macro et la struct reflétée est émise inline — un attribut, zéro script de build, rien dans `OUT_DIR`.
+
+## Déclarer la struct et le dossier
+
+Partez d'un dossier de modules que votre crate déclare déjà :
+
+<FileTree>
+	- src
+		- levels
+			- mod.rs
+			- button.rs
+			- beta_gamma.rs
+		- main.rs
+</FileTree>
+
+<Code lang="rust" code={`// src/main.rs
+mod levels;
+
+use rsmack_fs::folder_iso_struct;
+
+#[folder_iso_struct(folder = "levels", vis = "pub", derives("Debug"))]
+pub struct Levels {
+    // Les champs déclarés sont un croquis seulement : le miroir est généré depuis le dossier.
+    #[expect(dead_code)]
+    alpha: (),
+}`} />
+
+La macro scanne `src/levels/`, saute `mod.rs`, et génère un champ par racine de fichier. `button.rs` devient un champ `button` de type `crate::levels::button::Button` ; `beta_gamma.rs` devient `beta_gamma: crate::levels::beta_gamma::BetaGamma`. Les noms de champs sont en snake_case et les noms de types sont les conversions en PascalCase de la racine.
+
+<Aside kind="note" title="Les modules doivent exister dans votre crate">
+	Les champs générés référencent `crate::levels::button::Button`, donc le dossier doit faire partie de votre arbre de modules — déclarez `mod levels;` comme d'habitude.
+</Aside>
+
+## Devenir récursif pour les sous-répertoires
+
+Avec `recursive = true`, chaque sous-répertoire devient un `pub mod <name>` inline tenant sa propre struct reflétée, nommée d'après la forme PascalCase du répertoire :
+
+<FileTree>
+	- src
+		- ui
+			- mod.rs
+			- screens
+				- login.rs
+				- settings.rs
+</FileTree>
+
+<Code lang="rust" code={`#[folder_iso_struct(folder = "ui/screens", recursive = true, derives("Debug"))]
+pub struct Screens {}`} />
+
+## Ce qui est reporté
+
+- Les attributs et la visibilité de la struct annotée sont copiés sur chaque struct générée.
+- `derives("Debug", ...)` injecte des dérivations supplémentaires sur chaque struct générée.
+- Les champs déclarés sont abandonnés — le dossier est la source de vérité.
+- Les structs tuple rapportent `Only named struct supported`.
+
+## Étapes suivantes
+
+<LinkCard title="Référence folder_iso_struct" description="Chaque option, les règles de scan et les erreurs fatales." href="/reference/folder-iso-struct/" />
+<LinkCard title="Écrire votre propre macro" description="Construisez une macro comme celle-ci en une douzaine de lignes avec megamac." href="/guides/write-your-own-macro/" />

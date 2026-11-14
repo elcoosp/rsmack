@@ -1,0 +1,107 @@
+---
+title: Écrire votre propre macro
+description: "Livrez une macro fonction-like, d'attribut ou dérivée, documentée, en une douzaine de lignes avec megamac — protocole de charge utile inclus."
+type: how-to
+---
+
+import { Aside, Code, LinkCard, Steps, TabItem, Tabs } from '@astrojs/starlight/components';
+
+Utilisez [`megamac`](/reference/megamac/) pour écrire votre propre proc-macro. Vous déclarez la macro avec un appel `megamac!` et écrivez une fonction `exec` dans `src/impls/<name>.rs` ; le framework génère le point d'entrée `#[proc_macro]`, analyse la charge utile, extrait la documentation et câble les diagnostics.
+
+## 1. Créer une crate proc-macro
+
+<Code lang="shell" code={`cargo new my-macros --lib
+cd my-macros`} />
+
+Marquez la crate comme crate proc-macro et ajoutez les deux dépendances rsmack — `rsmack-megamac` pour la génération de code et `rsmack-utils` parce que le code généré route par ses pilotes d'entrée :
+
+<Code lang="toml" code={`[lib]
+proc-macro = true
+
+[dependencies]
+rsmack-megamac = "1"
+rsmack-utils = "1"
+darling = "0.24"
+proc-macro2 = "1"
+quote = "1"
+syn = "3"`} />
+
+## 2. Déclarer la macro
+
+<Code lang="rust" code={`// src/lib.rs
+use rsmack_megamac::megamac;
+
+mod impls;
+
+// Génère une macro fonction-like \`greeting!\` documentée depuis
+// les commentaires de doc d'\`Args\` dans src/impls/greeting.rs.
+megamac!(kind = Func, name = greeting);`} />
+
+## 3. Écrire l'implémentation
+
+La convention est `src/impls/<name>.rs` avec une struct `Args` documentée et une fonction `exec` :
+
+<Code lang="rust" code={`// src/impls/greeting.rs
+use darling::FromMeta;
+use proc_macro2::TokenStream;
+use rsmack_utils::megamac::ExecEnv;
+
+/// Greeting configuration
+#[derive(Debug, FromMeta)]
+pub struct Args {
+    /// Recipient of the greeting
+    pub who: String,
+}
+
+pub fn exec(args: Args, env: &ExecEnv) -> TokenStream {
+    let who = args.who;
+    env.finish(quote::quote! {
+                    pub const GREETING: &str = concat!("Hello ", #who, "!");
+    })
+}`} />
+
+Les commentaires de doc deviennent la documentation de la macro générée : la doc de struct est l'introduction, et chaque doc de champ devient une puce `# Parameters` avec son type. Les champs qui sont `Option<T>` ou qui portent `#[darling(default)]` sont marqués *(optional)*.
+
+## 4. L'utiliser
+
+Depuis une crate qui dépend de `my-macros` :
+
+<Code lang="rust" code={`my_macros::greeting!(who = "world");
+assert_eq!(GREETING, "Hello world!");`} />
+
+## Choisir le type de macro
+
+| Déclaration | Génère | `exec` reçoit |
+| --- | --- | --- |
+| `megamac!(kind = Func, name = x)` | macro fonction-like `x!` | `Args` analysé par darling ou jetons bruts |
+| `megamac!(kind = Attr, name = x)` | macro d'attribut `#[x]` | l'élément plus `Args` darling ou jetons bruts |
+| `megamac!(kind = Derive, name = x)` | dérive nommée `X` (PascalCase de `name`) | le `DeriveInput` seulement |
+
+## Passer à une macro DSL à charge utile brute
+
+Changez la signature `exec` pour prendre un `TokenStream` brut — la signature *est* la configuration :
+
+<Code lang="rust" code={`// src/impls/shout.rs — déclarée avec megamac!(kind = Func, name = shout);
+use proc_macro2::TokenStream;
+use rsmack_utils::megamac::ExecEnv;
+
+pub fn exec(input: TokenStream, env: &ExecEnv) -> TokenStream {
+    let shouted = input.to_string().to_uppercase();
+    env.finish(quote::quote! { pub const SHOUTED: &str = #shouted; })
+}`} />
+
+<Code lang="rust" code={`my_macros::shout!(hello megamac);
+assert_eq!(SHOUTED, "HELLO MEGAMAC");`} />
+
+<Aside kind="caution" title="Retirer args quand la charge utile est brute">
+	`args = "MyArgs"` combiné avec une signature `TokenStream` brute est une erreur de configuration fatale : retirez `args` ou changez la signature.
+</Aside>
+
+## Choisir la source de documentation
+
+Le réglage `doc` contrôle la documentation générée : `doc = "readme"` intègre le `README.md` de la crate appelante via `include_str!`, `doc = "inline"` génère seulement les docs de paramètres (le défaut, sans dépendance README), et `doc = "none"` n'émet aucune doc. Les options `impls = "my_impls"` et `args = "MyArgs"` renomment le module d'implémentation et la struct d'arguments.
+
+## Étapes suivantes
+
+<LinkCard title="Référence megamac" description="La grammaire complète d'invocation, les protocoles de signature et le comportement du cache." href="/reference/megamac/" />
+<LinkCard title="Gérer les erreurs de macro" description="Rapportez des diagnostics fatals et collectés sans paniquer." href="/guides/handle-errors/" />

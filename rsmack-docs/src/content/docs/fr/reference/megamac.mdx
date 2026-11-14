@@ -1,0 +1,88 @@
+---
+title: Référence megamac
+description: "Référence complète de la fabrique de macros megamac — grammaire d'invocation, protocole de charge utile piloté par la signature, génération de docs, cache et playground."
+type: reference
+---
+
+import { Badge, Code, LinkCard } from '@astrojs/starlight/components';
+
+`megamac` est une macro procédurale qui génère des macros procédurales. Un appel `megamac!` plus un fichier `impls/<name>.rs` donnent un point d'entrée entièrement documenté `#[proc_macro]`, `#[proc_macro_attribute]` ou `#[proc_macro_derive]`. Chemin de crate : `rsmack_megamac` (façade : `rsmack::megamac`, fonctionnalité `megamac`). L'écriture exige en plus une dépendance directe à `rsmack-utils`, parce que le code généré référence les pilotes `rsmack_utils::exec::*` et `ExecEnv`.
+
+## Invocation
+
+<Code lang="rust" code={`megamac!(kind = Attr, name = edoc, impls = "impls", args = "Args", doc = "readme");`} />
+
+## Arguments
+
+### kind :badge[required]
+
+- **Type :** `Func` \| `Attr` \| `Derive`
+- **Signification :** macro fonction-like, macro d'attribut, ou macro dérivée ; tout le reste est fatal — `Unsupported MacroKind 'X', expected 'Attr', 'Func' or 'Derive'`
+
+### name :badge[required]
+
+- **Type :** identifiant
+- **Signification :** nom de la macro générée ; pour `kind = Derive`, la dérive est la forme PascalCase de `name` (`type_name` → `#[derive(TypeName)]`)
+
+### impls :badge[optional]{variant="note"}
+
+- **Type :** identifiant
+- **Défaut :** `impls`
+- **Signification :** répertoire de module qui tient `<name>.rs`
+
+### args :badge[optional]{variant="note"}
+
+- **Type :** identifiant
+- **Défaut :** `Args`
+- **Signification :** la struct de charge utile darling en mode darling ; le définir à côté d'une signature `TokenStream` brute est fatal
+
+### doc :badge[optional]{variant="note"}
+
+- **Type :** `readme` \| `inline` \| `none`
+- **Défaut :** `inline`
+- **Signification :** `readme` intègre le `README.md` de la crate appelante via `include_str!` ; `inline` génère seulement les docs de paramètres ; `none` n'émet aucune doc
+
+## La convention de fichier d'implémentation
+
+L'implémentation vit à `<src>/<impls>/<name>.rs` (par ex. `src/impls/greeting.rs`) et contient une struct `Args` documentée plus une fonction `exec`. Les fichiers manquants sont fatals — `Failed to get macro_impl_src of <name> at <path>: <os error>` ; les fichiers non analysables rapportent `Failed to parse macro_impl_src <name>, this may happen for no real reason in your IDE, check that your project still builds with cargo`.
+
+## Protocole de charge utile — la signature est la configuration
+
+Le point d'entrée généré lit la signature `exec` (le paramètre `&ExecEnv` final est ignoré) :
+
+| Signature `exec` | Protocole | Point d'entrée généré |
+| --- | --- | --- |
+| `exec(args: Args, env: &ExecEnv) -> TokenStream` | analyse méta darling, docs depuis `Args` | `Func` |
+| `exec(input: TokenStream, env: &ExecEnv) -> TokenStream` | charge utile brute, macros DSL | `Func` |
+| `exec(args: Args, item: syn::Item, env: &ExecEnv) -> TokenStream` | darling + élément analysé | `Attr` |
+| `exec(input: TokenStream, item: syn::Item, env: &ExecEnv) -> TokenStream` | charge utile brute + élément analysé | `Attr` |
+| `exec(item: syn::DeriveInput, env: &ExecEnv) -> TokenStream` | dérive, pas de charge utile | `Derive` |
+
+Le type d'élément pour les macros `Attr` est inféré de la signature — pas de configuration séparée. L'identifiant de la struct d'arguments suit le nom de type de la signature sauf si `args = "..."` le surcharge.
+
+## Documentation générée
+
+Pour les macros `Func` et `Attr` en mode darling :
+
+- Le commentaire de doc de la struct `Args` devient le paragraphe d'introduction.
+- Chaque doc de champ devient une puce `# Parameters` : ``* `field` - `<doc>``` plus ``+ type: [`Ty`]``.
+- Les champs qui sont `Option<T>` ou qui portent `#[darling(default)]` sont marqués *(optional)* ; les champs non documentés lisent « Not documented ».
+- `doc = "readme"` préfixe avec `#[doc = include_str!("../README.md")]`.
+- La section `# Parameters` est omise quand il n'y a pas de champs, en mode brut, pour les dérivées, et avec `doc = "none"`. Un `Args` unité (`pub struct Args;`) est légitime.
+
+Erreurs de configuration : une struct `Args` manquante est fatale — `Failed to find 'Args' struct in 'impls'` ; seuls les champs nommés se documentent — `Unsupported 'Args' struct: only named fields are documented`.
+
+## Mémoïsation
+
+L'analyse du fichier d'implémentation est mise en cache par processus et indexée par `(path, mtime, len, kind, args_override)` ; les fatales et les problèmes en cache se rejouent à l'identique sur les résolutions à chaud. Les expansions à chaud mesurent 15–18 µs dans les [benchmarks](/reference/benchmarks/).
+
+## Playground
+
+<Code lang="shell" code={`cargo run -p rsmack-megamac --bin playground -- --kind Attr --name edoc`} />
+
+Imprime l'expansion sans compiler. Drapeaux : `--kind`, `--name` (requis), `--src-dir` (défaut `$CARGO_MANIFEST_DIR/src`), `--impls`, `--args`, `--doc`.
+
+## Étapes suivantes
+
+<LinkCard title="Écrire votre propre macro" description="Livrez une macro documentée en une douzaine de lignes." href="/guides/write-your-own-macro/" />
+<LinkCard title="Le protocole de charge utile" description="Pourquoi la signature exec est la configuration." href="/explanation/payload-protocol/" />

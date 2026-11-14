@@ -1,0 +1,36 @@
+---
+title: Performance
+description: "Comment rsmack reste rapide — évaluation const typée, mémoïsation globale au processus, syn conditionné par fonctionnalité, et le gain de mémoïsation megamac ×90."
+type: explanation
+---
+
+import { Aside, LinkCard } from '@astrojs/starlight/components';
+
+Les proc-macros se trouvent sur le chemin critique de compilation : chaque frappe dans un éditeur les ré-expanse. La conception rsmack traite le coût d'expansion comme une contrainte de premier ordre.
+
+## Évaluation const typée
+
+`edoc` évalue les expressions constantes avec des valeurs typées machine — `i128`, `f64`, `bool`, chaînes d'octets — et convertit en chaîne une fois, à l'assemblage des docs. Il n'y a pas d'allers-retours de chaîne par opération, ce qui explique pourquoi une évaluation typée comme `concat!("v", 1 + 2, "-", 3 * 4)` coûte 4,6 µs de bout en bout.
+
+## Caches globaux au processus
+
+Deux couches de mémoïsation partagent la même discipline de péremption — une clé `(path, mtime, len)` qui ne ré-analyse un fichier qu'après son changement réel :
+
+- **Fichiers de constantes** (`edoc`) : N éléments annotés contre un seul `src/consts.rs` coûtent une analyse ; les expansions à chaud contre le fichier en cache tournent à 63 µs pour une struct complète à 8 champs.
+- **Fichiers d'implémentation** (`megamac`) : l'analyse de `impls/<name>.rs` (protocole de charge utile, champs d'arguments, docs d'intro) est mise en cache par `(path, mtime, len, kind, args_override)`. La génération de macro à chaud mesure **15–18 µs, en baisse depuis environ 1,35 ms** — une amélioration d'environ 90× qui paie le plus dans les ré-expansions de rust-analyzer et les boucles de test.
+
+## syn conditionné par fonctionnalité
+
+`rsmack-utils` compile contre `syn` sans la fonctionnalité `full`. Seules les crates qui analysent réellement des éléments complets — structs, énumérations, fichiers entiers — optent pour elle, donc le poids de compilation de la boîte à outils reste au jeu de fonctionnalités par défaut.
+
+## Surcoût des diagnostics
+
+Le collecteur ajoute environ 160 ns sur le chemin heureux (`finish_result` autour d'une expansion valide) et environ 4 µs pour collecter et vider quatre erreurs. La gestion d'erreur est effectivement gratuite, ce qui rend l'UX collecter-tout abordable.
+
+<Aside kind="tip" title="Mesurez-le vous-même">
+        Les chiffres exacts et la commande de repro vivent dans la [référence des benchmarks](/reference/benchmarks/) : `cargo bench --workspace`.
+</Aside>
+
+## Étapes suivantes
+
+<LinkCard title="Référence des benchmarks" description="Chaque mesure criterion avec notes." href="/reference/benchmarks/" />

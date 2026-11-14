@@ -1,0 +1,86 @@
+---
+title: Référence edoc
+description: "Référence complète de la macro d'attribut edoc — syntaxe d'attribut, grammaire d'expressions const, résolution, mise en cache et erreurs."
+type: reference
+---
+
+import { Badge, Code, LinkCard } from '@astrojs/starlight/components';
+
+`edoc` est une macro d'attribut — générée par `megamac!(kind = Attr, name = edoc, doc = "readme")` — qui évalue des tuples `#[edoc((...))]` de littéraux de chaîne, de références constantes et d'expressions const en vrais attributs `#[doc]`. Chemin de crate : `rsmack_edoc` (façade : `rsmack::edoc`, fonctionnalité `edoc`).
+
+## Signature
+
+<Code lang="rust" code={`#[edoc(from = path::to::consts)]
+#[edoc(("Element ", CONST, " expression ", 2 * 21))]
+struct Item { ... }`} />
+
+## Arguments d'élément
+
+### from :badge[optional]{variant="note"}
+
+- **Type :** `syn::Path`
+- **Défaut :** aucun — sans `from`, seuls les tuples de niveau élément sont évalués
+- **Signification :** chemin de module qui localise le fichier de constantes ; `::` se mappe à `/` et `.rs` est ajouté relativement au `src/` de la crate appelante — `impls::sub::consts` lit `src/impls/sub/consts.rs`
+- **Contrainte :** `self` n'est pas géré comme segment de chemin
+- **Exemple :** `from = consts`
+
+### tuple de niveau élément :badge[optional]{variant="note"}
+
+- **Type :** un `syn::Expr` qui doit s'analyser comme un tuple
+- **Signification :** éléments concaténés dans le `#[doc]` de l'élément ; les docs préexistantes sur l'élément sont écrasées
+- **Placement :** un attribut `#[edoc((...))]` séparé à côté de `#[edoc(from = ...)]`
+
+## Éléments applicables
+
+Seules les structs et énumérations portent des docs de champ. Tout autre élément est fatal : `Only structs and enums supported, other items cannot carry field docs`.
+
+## Grammaire d'expression const
+
+Les éléments sont évalués avec un évaluateur typé reflétant le sous-ensemble `min_const_eval` de rustc. Les valeurs conservent des types machine (`i128`, `f64`, `bool`, `char`, `Vec<u8>`, `String`) jusqu'à l'assemblage des docs — il n'y a pas d'allers-retours de chaîne par opération.
+
+| Type | Formes supportées |
+| --- | --- |
+| Littéraux | `&str`, entiers (plage `i128`), flottants (`f64`), `bool`, `char`, chaînes d'octets |
+| Unaire | `-x`, `!x` (déréférencement `*` non supporté) |
+| Arithmétique | `+` `-` `*` `/` `%` (vérifiés ; division par zéro et débordement rapportés) |
+| Bit à bit | `&` `\|` `^` |
+| Décalages | `<<` `>>` (montant validé comme `u32`) |
+| Logique | `&&` `\|\|` |
+| Comparaison | `==` `!=` `<` `<=` `>` `>=` (opérandes de même type ; `bool` seulement `==`/`!=`) |
+| Casts | `as i8..i128`, `u8..u128`, `isize`, `usize`, `f32`, `f64` — rétrécissement int wrap en complément à deux (`300 as u8` → `44`), float-vers-int sature, `NaN` → `0` |
+| Macros | `concat!` (rend aussi les non-chaînes), `env!` (variable non définie = erreur), `option_env!` (défaut chaîne vide) |
+
+Tout le reste rapporte `Unsupported const expression '...'` ou `Unsupported const macro 'X!'` comme erreur collectée.
+
+## Résolution du fichier de constantes
+
+1. Le fichier est analysé comme un vrai `syn::File` ; un visiteur parcourt les éléments `const` à travers la pile de modules et indexe chacun par chemin complet (`nested::DEEP`).
+2. Les références const-à-const se résolvent paresseusement avec mémoïsation par clé ; les cycles rapportent `Cyclic const dependency involving 'X'`.
+3. Une référence matche d'abord le chemin complet exact. Un nom nu retombe sur une correspondance unique ; plusieurs candidats rapportent `Ambiguous const 'NAME', qualify the path: 'a::NAME', 'b::NAME'`, aucun candidat rapporte `Unresolved const ident 'X'`.
+
+## Mise en cache
+
+- Cache global au processus indexé par chemin de fichier, validé contre `(mtime, len)`.
+- N éléments annotés contre un seul fichier de constantes coûtent une analyse.
+- Les problèmes non fatals stockés avec le fichier en cache se ré-émettent à chaque utilisation.
+
+## Comportement d'erreur
+
+- **Fatale** (renvoyée via `ExecEnv::finish_result`) : fichier de constantes illisible, fichier de constantes non analysable, types d'éléments non supportés.
+- **Collectée** (vidée ensemble à la fin) : charges utiles de tuple cassées, expressions non supportées, constantes non résolues/ambigües. Chaque expression cassée d'un élément rapporte en une passe ; l'élément en échec rend un placeholder `Missing:` dans la doc tandis que le reste se matérialise toujours.
+
+## Exemple
+
+<Code lang="rust" code={`use rsmack_edoc::edoc;
+
+#[edoc(from = consts)]
+#[edoc(("The ", APP, " client"))]
+enum State {
+    #[edoc(("Idle since ", TAG))]
+    Idle,
+    Busy,
+}`} />
+
+## Étapes suivantes
+
+<LinkCard title="Documenter depuis des constantes" description="Un guide orienté tâche avec une installation fonctionnelle." href="/guides/docs-from-constants/" />

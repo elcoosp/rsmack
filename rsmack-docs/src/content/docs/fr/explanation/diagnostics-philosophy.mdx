@@ -1,0 +1,42 @@
+---
+title: Philosophie de diagnostic
+description: "Pourquoi les macros rsmack ne paniquent jamais — la conception Logr basée sur syn::Error, le guide de style, le fuzzing et les instantanés trybuild."
+type: explanation
+---
+
+import { Aside, LinkCard } from '@astrojs/starlight/components';
+
+Une proc-macro qui panique transforme le code utilisateur en erreur interne du compilateur — le pire mode d'échec qu'une bibliothèque puisse produire. L'objectif de conception de rsmack est que toute entrée arbitraire devienne un `compile_error!`, jamais un ICE.
+
+## Le problème avec proc-macro-error2
+
+Pendant des années l'écosystème Rust a accepté les paniques comme mécanisme de flux de contrôle de proc-macro : `proc-macro-error` et son fork maintenu `proc-macro-error2` attrapent les paniques et les convertissent en erreurs de compilateur. rsmack a abandonné la dépendance en 0.20 et l'a remplacée par un collecteur basé sur `syn::Error` : `Logr`. Il n'y a ni déroulement ni capture de panique nulle part dans l'espace de travail, et le code généré ne porte aucun attribut `#[proc_macro_error]`.
+
+## Deux sévérités, une passe
+
+| Sévérité | Mécanisme | Quand l'utiliser |
+| --- | --- | --- |
+| Fatale | Renvoyer un `syn::Error` avec `?` ; rendre via `ExecEnv::finish_result` | L'expansion n'a pas de sens — fichier illisible, élément non analysable |
+| Collectée | `Logr::emit_error`, vidé par `finish` comme jetons `compile_error!` | La sortie reste utilisable — un champ cassé ne doit pas cacher les autres |
+
+Les diagnostics collectés permettent à une expansion de rapporter **chaque** problème en une seule passe. `edoc` s'appuie dessus : un tuple avec deux éléments cassés produit deux erreurs préfixées, et les éléments sains rendent toujours leurs docs.
+
+## Le guide de style
+
+Les messages suivent `docs/ERROR_STYLE.md` dans le dépôt : commencer par l'échec, utiliser des verbes cohérents (`Failed to ...`, `Only ... supported`, `Unsupported ...`, `Invalid ...`), mettre les identifiants entre backticks, et retirer le point final. La [référence des messages d'erreur](/reference/error-messages/) catalogue les résultats.
+
+## Prouver la garantie
+
+Trois mécanismes gardent la promesse de non-panique honnête :
+
+1. **Fuzzing** — quatre cibles `cargo fuzz` alimentent les parseurs avec des octets arbitraires (source de constantes `edoc`, méta `edoc`, méta `wrap`, méta `megamac`). Une entrée invalide doit produire une erreur propre, une entrée valide doit se résoudre ou rapporter des problèmes — jamais paniquer.
+2. **Tests d'instantané** — chaque chemin d'erreur est épinglé avec `trybuild` dans `packages/rsmack-ui-tests`, donc la formulation et la promesse échouent à une revue si elles régressent.
+3. **Lints pedantic à zéro allow** — `clippy::pedantic` est dénié à l'échelle de l'espace de travail sans allows, fermant les chemins courants vers un `unwrap`/`expect` accidentel.
+
+<Aside kind="note" title="Vos macros héritent de la boîte à outils">
+	Écrire votre propre macro avec `megamac` route vos diagnostics par la même paire `ExecEnv`/`Logr` — le format de préfixe et le modèle à deux sévérités viennent gratuitement. Voir [gérer les erreurs de macro](/guides/handle-errors/).
+</Aside>
+
+## Étapes suivantes
+
+<LinkCard title="Référence des messages d'erreur" description="Chaque diagnostic figé avec son déclencheur." href="/reference/error-messages/" />

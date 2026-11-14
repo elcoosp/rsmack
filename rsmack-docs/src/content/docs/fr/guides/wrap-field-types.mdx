@@ -1,0 +1,71 @@
+---
+title: Envelopper les types de champ
+description: "Enveloppez chaque champ d'une struct nommée dans Option, Box, Vec ou tout type générique, avec contrôle par champ skip, with et map."
+type: how-to
+---
+
+import { Aside, Code, LinkCard } from '@astrojs/starlight/components';
+
+Utilisez [`wrap`](/reference/wrap/) pour produire des variantes brouillon, builder ou stockage d'une struct sans écrire des types parallèles à la main. Un attribut enveloppe chaque champ d'une struct nommée dans le type générique que vous choisissez.
+
+## Envelopper toute une struct
+
+Définissez l'enveloppe par défaut avec `with` — un identifiant nu ou un littéral de chaîne fonctionnent tous deux :
+
+<Code lang="rust" code={`use rsmack_wrap::wrap;
+
+#[wrap(with = Option)]
+struct User {
+    name: String,      // devient Option<String>
+    tags: Vec<String>, // devient Option<Vec<String>>
+}`} />
+
+## Contrôler les champs individuels
+
+Les attributs `#[wrap(...)]` par champ surchargent le défaut. L'option `skip` laisse un champ intact, un `with` par champ échange l'enveloppe, et `map` remplace entièrement le type interne :
+
+<Code lang="rust" code={`#[wrap(with = Option)]
+struct User {
+    name: String,
+    #[wrap(skip)]
+    untouched: &'static str, // reste &'static str
+    #[wrap(with = "Box")]
+    boxed: String, // devient Box<String>
+    #[wrap(with = "Vec", map = "u8")]
+    raw: String, // devient Vec<u8>
+}`} />
+
+## Tout type s'enveloppe
+
+La transformation réécrit le type de champ en `Wrapper<Inner>`, donc toute expression de type s'enveloppe : chemins, tranches, tuples, tableaux, références, pointeurs bruts, pointeurs de fonction et objets trait :
+
+<Code lang="rust" code={`#[wrap(with = Option)]
+struct Inputs {
+    borrowed: &'static str,            // Option<&'static str>
+    pointer: *const u8,                // Option<*const u8>
+    callback: fn(u8) -> bool,          // Option<fn(u8) -> bool>
+    object: Box<dyn Send>,             // Option<Box<dyn Send>>
+}`} />
+
+## Garder les dérivations serde après wrap
+
+<Aside kind="caution" title="Exécuter wrap avant serde">
+	Exécutez `wrap` avant `#[derive(Serialize, Deserialize)]`, sinon la dérive échoue. La dérive doit observer les types de champs enveloppés.
+</Aside>
+
+<Code lang="rust" code={`#[wrap(with = Option)]
+#[derive(serde::Serialize, serde::Deserialize)]
+struct User {
+    name: String,
+}`} />
+
+## Attention aux contraintes
+
+- Seules les structs à champs nommés sont supportées ; les structs tuple et unité rapportent `Only named struct supported`.
+- Les génériques et les where-clauses passent intacts — seule la section `fields` de la struct est réécrite.
+- Les attributs non-`wrap` sont préservés ; les attributs `#[wrap(...)]` eux-mêmes sont consommés.
+
+## Étapes suivantes
+
+<LinkCard title="Référence wrap" description="Chaque option, défaut et message d'erreur dans un seul tableau." href="/reference/wrap/" />
+<LinkCard title="Énumérations SeaORM (seanum)" description="Générez des énumérations actives avec discriminants et migrations." href="/guides/seaorm-enums/" />

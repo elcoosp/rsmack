@@ -1,0 +1,67 @@
+---
+title: Énumérations SeaORM (seanum)
+description: "Générez des énumérations actives SeaORM avec dérivations par défaut minimales, discriminants entiers explicites, rename_all et un helper de migration."
+type: how-to
+---
+
+import { Aside, Code, LinkCard } from '@astrojs/starlight/components';
+
+Utilisez [`seanum`](/reference/seanum/) quand une énumération doit vivre dans une base de données via [SeaORM](https://www.sea-ql.org/SeaORM/). La macro génère la plomberie `DeriveActiveEnum` avec des dérivations par défaut délibérément minimales et ajoute des discriminants entiers ou un helper de migration à la demande.
+
+## Définir une énumération adossée à une chaîne
+
+<Code lang="rust" code={`use rsmack_seanum::seanum;
+
+#[seanum(
+    rs_type = "String",
+    db_type = "String(sea_orm::sea_query::StringLen::None)",
+    rename_all = "snake_case",
+    derives("::serde::Serialize", "::serde::Deserialize")
+)]
+#[derive(Default)]
+pub enum SwitchAction {
+    #[default]
+    #[seanum(rename = "send_email")]
+    SendEmail,
+    SendSms,
+}`} />
+
+Les valeurs générées sont `send_email` (le `rename` explicite l'emporte sur `rename_all`) et `send_sms`. Les dérivations par défaut sont `Clone`, `Debug`, `PartialEq`, `Eq`, `Hash`, `EnumIter` et `DeriveActiveEnum` — le support `serde` et `fake` est opt-in via `derives(...)`, jamais une dépendance cachée.
+
+## Utiliser des discriminants entiers
+
+Avec un `rs_type` entier de `i8` à `u64` (plus `isize`/`usize`), la macro ajoute `#[repr(...)]`, un `#[sea_orm(num_value = N)]` sur chaque variante, et un `TryFrom` basé valeur :
+
+<Code lang="rust" code={`#[seanum(rs_type = "i32", db_type = "Integer")]
+pub enum Level {
+    Low = 10,
+    Medium, // continue depuis 11
+    High,
+}`} />
+
+Les discriminants explicites sont honorés et les variantes suivantes continuent depuis eux. Les doublons sont rapportés comme erreur collectée et le `TryFrom` est sauté, tandis que l'énumération elle-même compile toujours.
+
+## Générer le helper de migration
+
+`migration = true` émet un helper `migration_column_def()` pour usage avec [`sea-orm-migration`](https://docs.rs/sea-orm-migration) :
+
+<Code lang="rust" code={`#[seanum(rs_type = "String", db_type = "Text", migration = true)]
+pub enum Status {
+    Active,
+    Retired,
+}`} />
+
+Le helper mappe le `db_type` vers la méthode `ColumnDef` correspondante — `Text`, `Integer`, `BigInt`, `Boolean`, `DateTime`, et douze autres sont couverts.
+
+<Aside kind="caution" title="Les valeurs db_type à largeur de colonne n'ont pas de mapping">
+	Un `db_type` avec un paramètre de type, tel que `"String(sea_orm::sea_query::StringLen::None)"`, n'a pas de mapping `ColumnDef`. Utilisez `migration = true` avec un `db_type` nu comme `"String"`, `"Text"` ou `"Integer"`.
+</Aside>
+
+## Renommer les valeurs de façon cohérente
+
+`rename_all` accepte exactement sept cas : `snake_case`, `camelCase`, `PascalCase`, `kebab-case`, `SCREAMING_SNAKE_CASE`, `lowercase` et `UPPERCASE`. Un cas inconnu est une erreur fatale à l'expansion. `enum_name = "..."` surcharge le nom de table, qui vaut par défaut le nom d'énumération en snake_case.
+
+## Étapes suivantes
+
+<LinkCard title="Référence seanum" description="Chaque option, le comportement des rs_type entiers et la table de mapping db_type." href="/reference/seanum/" />
+<LinkCard title="Refléter un dossier" description="Reflétez un dossier de modules dans une struct à la compilation." href="/guides/mirror-a-folder/" />

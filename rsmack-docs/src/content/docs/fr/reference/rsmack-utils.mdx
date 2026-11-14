@@ -1,0 +1,78 @@
+---
+title: Référence rsmack-utils
+description: "Référence complète de rsmack-utils — ExecEnv, Logr, les cinq pilotes d'entrée, les aides de système de fichiers et les macros exportées."
+type: reference
+---
+
+import { Badge, LinkCard } from '@astrojs/starlight/components';
+
+`rsmack-utils` est la boîte à outils sur laquelle chaque macro de l'espace de travail se construit : la paire de diagnostics `ExecEnv`/`Logr`, cinq pilotes d'entrée réutilisables, des aides de système de fichiers mémoïsées, et deux aides `macro_rules!` exportées. Elle compile sans la fonctionnalité `full` de syn ; seules les crates qui analysent des éléments complets optent pour elle.
+
+## ExecEnv
+
+L'environnement par expansion remis à chaque fonction `exec`.
+
+| Membre | Signature | Description |
+| --- | --- | --- |
+| `prefix` | `pub prefix: String` | Préfixe de diagnostic, rendu `#[<prefix>] <message>` |
+| `logr` | `pub logr: Logr` | Le collecteur de diagnostics possédé par cette expansion |
+| `new` | `new(prefix: impl Into<String>) -> Self` | Constructeur simple |
+| `finish` | `finish(&self, output: TokenStream) -> TokenStream` | Ajoute toutes les erreurs collectées comme jetons `compile_error!` et renvoie la sortie |
+| `finish_result` | `finish_result(&self, result: syn::Result<TokenStream>) -> TokenStream` | Rend `Ok` tel quel, ou ajoute l'erreur et vide — l'idiome canonique est `env.finish_result(run(args, item, env))` |
+
+## Logr
+
+Le collecteur de diagnostics. Vit pendant une expansion de proc-macro ; il n'y a aucun chemin de panique nulle part.
+
+| Méthode | Signature | Description |
+| --- | --- | --- |
+| `new` | `new(prefix: impl Into<String>) -> Self` | Crée un collecteur avec un préfixe de message `#[<prefix>]` |
+| `error` | `error(&self, span: Span, msg: M) -> syn::Error` (`#[must_use]`) | Construit une erreur fatale pour retours en style `?` |
+| `call_site_error` | `call_site_error(&self, msg: M) -> syn::Error` | Erreur fatale au span de toute l'invocation |
+| `emit_error` | `emit_error(&self, span: Span, msg: M)` | Collecte une erreur non fatale ; le vidage a lieu dans `finish` |
+| `has_errors` | `has_errors(&self) -> bool` | Si une erreur non fatale a été collectée |
+| `finish` | `finish(&self, output: TokenStream) -> TokenStream` | Vide les erreurs collectées comme jetons `compile_error!` ajoutés à la sortie |
+
+## Pilotes d'entrée
+
+Cinq pilotes génériques dans `rsmack_utils::exec` ; le code généré route par eux.
+
+| Pilote | Forme |
+| --- | --- |
+| `attr_entrypoint` | `(meta, item, prefix, exec)` — méta darling, élément analysé |
+| `attr_raw_entrypoint` | `(meta, item, prefix, exec)` — méta darling, charge utile brute, élément analysé |
+| `func_entrypoint` | `(meta, prefix, exec)` — méta darling |
+| `func_raw_entrypoint` | `(input, prefix, exec)` — charge utile brute |
+| `derive_entrypoint` | `(item, prefix, exec)` — entrée de dérive, sans charge utile |
+
+Une méta d'attribut vide s'analyse comme liste vide, donc `#[my_macro]` nu fonctionne avec des args tout-par-défaut. Chaque échec d'analyse devient un `compile_error!` préfixé.
+
+## Aides de système de fichiers
+
+Aides dans `rsmack_utils::fs`, partagées par les macros et disponibles pour vos propres scripts de build.
+
+| Élément | Description |
+| --- | --- |
+| `staleness_key(path) -> Option<(SystemTime, u64)>` | La clé de cache `(mtime, len)` contre laquelle les deux mémo-caches se valident |
+| `calling_crate_dir() -> &'static Path` | Remontée mémoïsée depuis `OUT_DIR` vers le `Cargo.toml` le plus proche ; exige un script de build pour que `OUT_DIR` soit défini |
+| `package_src_folder() -> PathBuf` | `$CARGO_MANIFEST_DIR/src` |
+| `scan_modules(folder, recursive) -> Result<ModuleTree, String>` | Scan de dossier déterministe qui saute `mod.rs` |
+| `ModuleTree` | `{ fields: Vec<ModuleField>, dirs: Vec<(Ident, ModuleTree)> }` avec une méthode `render(...)` qui émet le code reflété |
+| `ModuleField` | `{ mod_ident, ty_ident }` — identifiant de champ snake_case et identifiant de type PascalCase |
+| `folder_iso_struct()` | builder bon pour la **saveur script de build** : `.name(...)`, `.pre(&TokenStream)`, `.from_crate(...)`, `.folder(...)`, `.vis("pub")`, `.recursive(false)`, `.log_enabled(false)`, `.call()` — écrit `<name>.rs` dans `OUT_DIR` |
+| `parse_id_maybe_raw(s) -> Ident` | Analyse les mots-clés comme identifiants bruts |
+| `generate_file(path, bytes)` | Écrit un fichier dans `OUT_DIR` |
+
+## Macros exportées
+
+### impl_json_schema!
+
+`impl_json_schema!(UserId, "string")` implémente `schemars::JsonSchema` avec un schéma simple `{"type": "string"}`.
+
+### cl!
+
+L'aide de lien de code pour les commentaires de doc : `cl!(syn::Error)` rend `` [`syn::Error`] ``, `cl!(syn::Error!)` rend `` [`syn::Error!`] ``, et `cl!(Debug)` rend `Debug`.
+
+## Étapes suivantes
+
+<LinkCard title="Gérer les erreurs de macro" description="Diagnostics fatals et collectés en pratique." href="/guides/handle-errors/" />

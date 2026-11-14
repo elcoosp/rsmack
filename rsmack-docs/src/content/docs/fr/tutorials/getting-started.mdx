@@ -1,0 +1,115 @@
+---
+title: Premiers pas
+description: "Installez rsmack, documentez une struct depuis des constantes avec edoc, et enveloppez ses champs avec wrap — en une seule passe par le chemin doré."
+type: tutorial
+---
+
+import { Aside, Card, CardGrid, Code, LinkCard, Steps, TabItem, Tabs } from '@astrojs/starlight/components';
+
+Dans ce tutoriel vous installez `rsmack`, documentez les champs d'une struct depuis des constantes avec [`edoc`](/reference/edoc/), et enveloppez ces champs dans `Option` avec [`wrap`](/reference/wrap/). Vous terminez en lisant la documentation générée dans `cargo doc`.
+
+## Prérequis
+
+- Rust **1.94 ou plus récent**. Vérifiez avec `rustc --version` et mettez à jour avec `rustup update stable` si nécessaire.
+- Familiarité avec Rust de base : structs, modules et commandes `cargo`.
+
+## 1. Créer une crate
+
+<Code lang="shell" code={`cargo new rsmack-demo
+cd rsmack-demo`} />
+
+## 2. Ajouter la dépendance
+
+Une seule dépendance apporte chaque macro :
+
+<Tabs>
+	<TabItem label="cargo add">
+<Code lang="shell" code={`		cargo add rsmack`} />
+	</TabItem>
+	<TabItem label="Cargo.toml">
+<Code lang="toml" code={`		[dependencies]
+		rsmack = "1"`} />
+	</TabItem>
+</Tabs>
+
+La façade `rsmack` ré-exporte les cinq macros derrière sa fonctionnalité `full` (le défaut). Pour dépendre d'une seule macro à la place, ajoutez `rsmack` avec une fonctionnalité — par exemple `cargo add rsmack --no-default-features --features edoc` — ou dépendez de la crate autonome, telle que `rsmack-edoc`.
+
+## 3. Créer un fichier de constantes
+
+`edoc` lit les constantes depuis un vrai fichier dans le répertoire `src/` de votre crate. Créez `src/consts.rs` :
+
+<Code lang="rust" code={`// src/consts.rs
+pub const APP: &str = "myapp";
+pub const MAJOR: i32 = 1;
+pub const TAG: &str = concat!("v", MAJOR);`} />
+
+<Aside kind="caution" title="Les constantes vivent dans un fichier, pas dans un module inline">
+	`edoc` résout `from = consts` vers le chemin `src/consts.rs` sur disque et analyse ce fichier. Un `mod consts { ... }` inline dans un autre fichier ne satisfait pas la recherche. Gardez les constantes dans leur propre fichier.
+</Aside>
+
+## 4. Documenter une struct depuis les constantes
+
+Remplacez `src/main.rs` par :
+
+<Code lang="rust" code={`use rsmack::edoc;
+
+#[edoc(from = consts)]
+struct Client {
+    /// Fallback docs: replaced by the edoc tuple below.
+    #[edoc(("Client ", APP, " tag ", TAG, " build ", 2 * 21))]
+    name: String,
+}
+
+fn main() {
+    let _client = Client { name: "demo".to_string() };
+}`} />
+
+Chaque tuple `#[edoc((...))]` évalue ses éléments — littéraux de chaîne, références constantes et expressions const telles que `2 * 21` — et transforme la concaténation en vrai attribut `#[doc]` sur le champ. Les valeurs d'éléments gardent leurs types machine (`i128`, `f64`, `&str`, ...) jusqu'à l'assemblage des docs.
+
+Compilez une fois pour vérifier que tout s'expanse :
+
+<Code lang="shell" code={`cargo build`} />
+
+La commande se termine sans erreur. Si une constante est mal orthographiée, le compilateur rapporte `#[rsmack_edoc::edoc] Unresolved const ident ...` et chaque autre expression cassée sur l'élément dans la même passe.
+
+## 5. Lire les docs générées
+
+<Code lang="shell" code={`cargo doc --no-deps --open`} />
+
+Naviguez vers `Client` puis vers le champ `name`. Le texte rendu lit :
+
+<Code lang="text" code={`Client myapp tag v1 build 42`} />
+
+`APP` se rend comme `myapp`, `TAG` résout la référence const-à-const en `v1`, et l'expression `2 * 21` s'évalue à `42`.
+
+## 6. Envelopper les champs
+
+Ajoutez `wrap` à la même struct — ou à une seconde, comme ici — et chaque type de champ est enveloppé dans le type générique que vous nommez :
+
+<Code lang="rust" code={`use rsmack::wrap;
+
+#[wrap(with = Option)]
+struct UserDraft {
+    name: String, // devient Option<String>
+    email: String, // devient Option<Vec<String>> pour les champs Vec, et ainsi de suite
+}
+
+fn main() {
+    let draft = UserDraft {
+                    name: None,
+                    email: None,
+    };
+}`} />
+
+Les champs sont maintenant `Option<String>`. Le contrôle par champ est disponible avec `#[wrap(skip)]`, `#[wrap(with = "Box")]`, et `#[wrap(with = "Vec", map = "u8")]` — voir le [guide `wrap`](/guides/wrap-field-types/) pour le comportement complet.
+
+<Aside kind="caution" title="L'ordre compte avec serde">
+	Exécutez `wrap` avant `#[derive(Serialize, Deserialize)]`. La dérive doit observer les types de champs enveloppés, pas les originaux.
+</Aside>
+
+## Où aller ensuite
+
+<CardGrid>
+	<Card title="Documenter depuis des constantes" description="Références qualifiées, variantes d'énumération, docs au niveau élément et chaque expression supportée." href="/guides/docs-from-constants/" />
+	<Card title="Écrire votre propre macro" description="Livrez une proc-macro documentée depuis une douzaine de lignes avec megamac." href="/guides/write-your-own-macro/" />
+</CardGrid>

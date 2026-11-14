@@ -1,0 +1,77 @@
+---
+title: Référence wrap
+description: "Référence complète de la macro d'attribut wrap — options d'élément, options par champ, types supportés et contraintes."
+type: reference
+---
+
+import { Badge, Code, LinkCard } from '@astrojs/starlight/components';
+
+`wrap` est une macro d'attribut — générée par `megamac!(kind = Attr, name = wrap, doc = "readme")` — qui enveloppe chaque champ d'une struct nommée dans un type générique. Chemin de crate : `rsmack_wrap` (façade : `rsmack::wrap`, fonctionnalité `wrap`).
+
+## Signature
+
+<Code lang="rust" code={`#[wrap(with = Option)]
+struct User {
+    name: String, // Option<String>
+    #[wrap(skip)]
+    untouched: &'static str,
+}`} />
+
+## Arguments d'élément
+
+### with :badge[required]
+
+- **Type :** `syn::Ident` — accepté comme identifiant nu ou littéral de chaîne
+- **Défaut :** aucun, l'argument est requis
+- **Signification :** l'enveloppe par défaut appliquée à chaque champ sans configuration par champ
+- **Exemple :** `with = Option` ou `with = "Option"`
+
+## Arguments par champ
+
+Analysés depuis chaque attribut `#[wrap(...)]` sur un champ ; l'attribut est consommé depuis la sortie.
+
+### skip :badge[optional]{variant="note"}
+
+- **Type :** `bool`
+- **Défaut :** `false`
+- **Signification :** laisse le type de champ intact
+
+### with :badge[optional]{variant="note"}
+
+- **Type :** `syn::Ident`
+- **Défaut :** hérite de l'enveloppe de niveau élément
+- **Signification :** surcharge d'enveloppe par champ
+- **Exemple :** `#[wrap(with = "Box")]`
+
+### map :badge[optional]{variant="note"}
+
+- **Type :** `syn::Type`
+- **Défaut :** aucun — le type interne d'origine est conservé
+- **Signification :** remplace entièrement le type interne
+- **Exemple :** `#[wrap(with = "Vec", map = "u8")]` transforme `String` en `Vec<u8>`
+
+## Types de champ supportés
+
+La transformation analyse `Wrapper<Inner>`, donc toute expression de type s'enveloppe :
+
+| Type de champ | Avec `Option` |
+| --- | --- |
+| `String` | `Option<String>` |
+| `Vec<T>` | `Option<Vec<T>>` |
+| `&'static str` | `Option<&'static str>` |
+| `*const u8` | `Option<*const u8>` |
+| `fn(u8) -> bool` | `Option<fn(u8) -> bool>` |
+| `Box<dyn Send>` | `Option<Box<dyn Send>>` |
+| `(u8, u16)` | `Option<(u8, u16)>` |
+| `[T; N]` | `Option<[T; N]>` |
+
+## Contraintes et comportement
+
+- Seules les structs à champs nommés : les structs tuple et unité sont fatales — `Only named struct supported`.
+- Les génériques et where-clauses passent intacts ; seuls les champs sont réécrits.
+- Les attributs non-`wrap` sont préservés. Placez la macro **avant** `#[derive(Serialize, Deserialize)]` pour que la dérive observe les types enveloppés.
+- Les attributs par champ cassés sont collectés comme `Failed to parse wrap attribute: {e}` et retirés.
+
+## Étapes suivantes
+
+<LinkCard title="Envelopper les types de champ" description="Un guide orienté tâche avec l'ordre serde." href="/guides/wrap-field-types/" />

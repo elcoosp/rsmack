@@ -1,0 +1,48 @@
+---
+title: Aperçu avec le playground
+description: "Imprimez l'expansion qu'un appel megamac émettrait — sans rien compiler — avec le binaire playground de rsmack-megamac."
+type: how-to
+---
+
+import { Aside, Code, LinkCard } from '@astrojs/starlight/components';
+
+Le binaire `playground` dans [`rsmack-megamac`](/reference/megamac/) imprime le code qu'un appel `megamac!` générerait — la fonction d'entrée et sa documentation — avant que vous ne compiliez quoi que ce soit. Il lit votre `src/impls/<name>.rs` et rejoue la même analyse que la macro, mémoïsation comprise.
+
+## L'exécuter depuis l'espace de travail rsmack
+
+Dans le dépôt rsmack :
+
+<Code lang="shell" code={`cargo run -p rsmack-megamac --bin playground -- --kind Attr --name edoc`} />
+
+## L'exécuter dans votre propre crate
+
+Le binaire est livré avec la crate publiée `rsmack-megamac`. Installez-le une fois :
+
+<Code lang="shell" code={`cargo install rsmack-megamac`} />
+
+Puis lancez-le depuis la racine de votre crate, où `--src-dir` vaut `$CARGO_MANIFEST_DIR/src` par défaut :
+
+<Code lang="shell" code={`playground --kind Func --name greeting`} />
+
+La sortie est le source du point d'entrée généré — la signature de la fonction proc-macro et le commentaire de doc assemblé depuis les docs de votre `Args` — imprimée sur stdout.
+
+## Drapeaux
+
+| Drapeau | Défaut | Signification |
+| --- | --- | --- |
+| `--kind` | requis | `Func`, `Attr`, ou `Derive` |
+| `--name` | requis | Le nom de macro déclaré dans `megamac!` |
+| `--src-dir` | `$CARGO_MANIFEST_DIR/src` | Où `impls/<name>.rs` est cherché |
+| `--impls` | `impls` | Le nom du module d'implémentation |
+| `--args` | `Args` | Le nom de la struct args |
+| `--doc` | `inline` | `readme`, `inline`, ou `none` |
+
+Les erreurs sortent avec un code non nul et `error: <message>` ; un argument manquant ou inattendu imprime la ligne d'usage.
+
+<Aside kind="note" title="Ami de rust-analyzer">
+	Parce que l'analyse est mémoïsée par `(path, mtime, len)`, les exécutions répétées du playground — comme les ré-expansions de rust-analyzer — paient un stat, pas une analyse. Les expansions à chaud mesurent 15–18 µs dans les [benchmarks](/reference/benchmarks/).
+</Aside>
+
+## Étapes suivantes
+
+<LinkCard title="Référence megamac" description="Comment le protocole de charge utile est inféré de votre signature exec." href="/reference/megamac/" />

@@ -1,0 +1,77 @@
+---
+title: Référence folder_iso_struct
+description: "Référence complète de la macro d'attribut folder_iso_struct — options, règles de scan, comportement de report et erreurs."
+type: reference
+---
+
+import { Badge, Code, LinkCard } from '@astrojs/starlight/components';
+
+`folder_iso_struct` est une macro d'attribut — générée par `megamac!(kind = Attr, name = folder_iso_struct, doc = "readme")` — qui reflète un dossier de modules Rust dans une struct inline à l'expansion. Chemin de crate : `rsmack_fs` (façade : `rsmack::folder_iso_struct`, fonctionnalité `fs`).
+
+## Signature
+
+<Code lang="rust" code={`#[folder_iso_struct(folder = "levels", vis = "pub", recursive = true, derives("Debug"))]
+pub struct Levels { ... }`} />
+
+## Arguments
+
+### folder :badge[required]
+
+- **Type :** littéral de chaîne
+- **Signification :** dossier à refléter, relatif au `src/` de la crate appelante — `"levels"` ou `"ui/screens"`
+- **Erreur :** un dossier manquant est fatal — `Failed to scan the folder to mirror '<path>': <reason>`
+
+### vis :badge[optional]{variant="note"}
+
+- **Type :** littéral de chaîne, par ex. `"pub"` ou `"pub(crate)"`
+- **Défaut :** la visibilité déclarée de la struct annotée
+- **Signification :** visibilité de chaque struct générée ; les valeurs invalides sont fatales — `Invalid 'vis' value 'X', expected e.g. 'pub' or 'pub(crate)'`
+
+### recursive :badge[optional]{variant="note"}
+
+- **Type :** `bool`
+- **Défaut :** `false`
+- **Signification :** les sous-répertoires deviennent des blocs `pub mod <name>` inline tenant leur propre struct reflétée, nommés d'après la forme PascalCase du répertoire ; en mode plat, les répertoires deviennent de simples champs (comportement historique)
+
+### derives :badge[optional]{variant="note"}
+
+- **Type :** liste de littéraux de chaîne, analysés comme chemins
+- **Défaut :** vide
+- **Signification :** dérivations supplémentaires injectées sur chaque struct générée, à côté des attributs propres de la struct annotée ; les entrées invalides rapportent `Invalid 'derives' entry`
+
+## Règles de scan
+
+- Le dossier `$CARGO_MANIFEST_DIR/src/<folder>` est scanné à l'expansion — pas de script de build, pas d'artefacts dans `OUT_DIR`.
+- Les entrées se trient de façon déterministe ; `mod.rs` est sauté.
+- Chaque racine de fichier se mappe à un nom de champ snake_case et un nom de type PascalCase : `beta_gamma.rs` → champ `beta_gamma`, type `BetaGamma`. Les mots-clés deviennent des identifiants bruts.
+- Les racines non-UTF-8 sont rapportées.
+
+## Report et références
+
+- Les attributs et la visibilité de la struct annotée sont copiés sur chaque struct générée.
+- Les champs déclarés ne sont qu'un croquis et sont abandonnés — le dossier est la source de vérité.
+- Les champs de miroir référencent `crate::<folder segments>::<mod>::<Type>`, donc les modules doivent exister dans l'arbre de modules de la crate appelante.
+- Les structs tuple sont fatales — `Only named struct supported`.
+
+## Exemple
+
+<Code lang="rust" code={`use rsmack_fs::folder_iso_struct;
+
+#[folder_iso_struct(folder = "levels", vis = "pub", derives("Debug"))]
+pub struct Levels {
+    // Les champs déclarés ne sont qu'un croquis : le miroir est généré depuis le dossier.
+    #[expect(dead_code)]
+    alpha: (),
+}`} />
+
+génère, pour `src/levels/{button.rs, beta_gamma.rs}` :
+
+<Code lang="rust" code={`#[derive(Debug)]
+pub struct Levels {
+    pub button: crate::levels::button::Button,
+    pub beta_gamma: crate::levels::beta_gamma::BetaGamma,
+}`} />
+
+## Étapes suivantes
+
+<LinkCard title="Refléter un dossier" description="Un guide orienté tâche avec miroir récursif." href="/guides/mirror-a-folder/" />

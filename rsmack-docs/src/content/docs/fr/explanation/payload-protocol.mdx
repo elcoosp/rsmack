@@ -1,0 +1,39 @@
+---
+title: Le protocole de charge utile
+description: "Pourquoi la signature exec d'une macro megamac est sa configuration — charges utiles darling versus brutes, macros dérivées et règles d'inférence."
+type: explanation
+---
+
+import { LinkCard } from '@astrojs/starlight/components';
+
+La plupart des frameworks de macro vous demandent de déclarer la forme de la charge utile deux fois : une fois dans une struct de configuration et une fois dans le code qui l'analyse. `megamac` dérive tout de la signature `exec` — la signature *est* la configuration.
+
+## Comment l'inférence fonctionne
+
+À l'expansion, `megamac!` localise `exec` dans `src/impls/<name>.rs`, retire le paramètre final `&ExecEnv`, et compte ce qui reste. Le dernier segment de chemin du type de chaque paramètre pilote la décision, donc `proc_macro2::TokenStream` et un `TokenStream` ré-exporté sont reconnus également.
+
+| Paramètres restants | Protocole | Point d'entrée généré |
+| --- | --- | --- |
+| `args: Args` | analyse méta darling, docs extraites de `Args` | `func_entrypoint` |
+| `input: TokenStream` | charge utile brute pour macros DSL | `func_raw_entrypoint` |
+| `args: Args, item: syn::Item` | méta darling plus élément analysé | `attr_entrypoint` |
+| `input: TokenStream, item: syn::Item` | charge utile brute plus élément analysé | `attr_raw_entrypoint` |
+| `item: syn::DeriveInput` | dérive — pas de charge utile, pas de docs `# Parameters` | `derive_entrypoint` |
+
+Le type d'élément analysé pour les macros d'attribut reste inféré de la signature : annotez l'élément avec le type que vous acceptez, et le point d'entrée généré l'analyse pour vous.
+
+## Pourquoi darling par défaut
+
+Les charges utiles analysées par darling donnent aux utilisateurs de macro des arguments nommés (`greeting!(who = "world")`) et aux auteurs de macro une configuration auto-documentée : les commentaires de doc de la struct `Args` deviennent la section `# Parameters` de la macro générée, et les champs `Option<T>` ou `#[darling(default)]` sont automatiquement marqués *(optional)*. La documentation ne peut pas dériver du comportement puisque les deux viennent de la même source.
+
+## Pourquoi des charges utiles brutes existent
+
+Les macros DSL — `shout!(hello megamac)` — prennent de la soupe de jetons, pas des arguments nommés. Changer la signature en `exec(input: TokenStream, env: &ExecEnv)` sélectionne le pilote brut ; il n'y a rien d'autre à configurer. Le seul chevauchement fatal : déclarer `args = "MyArgs"` alors que la signature prend un `TokenStream` brut est rejeté, parce que les deux réglages se contredisent.
+
+## Les dérivées n'ont pas de charge utile
+
+`kind = Derive` génère une macro dérivée nommée d'après la forme PascalCase de `name` — `type_name` produit `#[derive(TypeName)]`. Les dérivées reçoivent le `DeriveInput` et ne documentent aucun paramètre.
+
+## Étapes suivantes
+
+<LinkCard title="Référence megamac" description="La grammaire d'invocation et les règles de génération de docs." href="/reference/megamac/" />
