@@ -1,0 +1,61 @@
+---
+title: Comment nous avons conçu une fabrique de macros procédurales qui génère sa propre documentation
+date: 2026-11-15
+cover:
+  alt: Architecture de Rsmack
+  image: ../../blog/welcome-cover.jpg
+image: ../../blog/welcome-cover.jpg
+---
+
+import { Card, CardGrid, Aside } from '@astrojs/starlight/components';
+
+Écrire des macros procédurales en Rust implique de répéter chaque fois la même plomberie : analyser les jetons d'attributs, acheminer les diagnostics `syn::Error`, maintenir les commentaires de documentation synchronisés avec les arguments acceptés et câbler les points d'entrée de la crate.
+
+Nous avons conçu `rsmack` (`0.1`) afin que vous n'ayez qu'à écrire la structure `Args` et la fonction de transformation `exec`, tandis que `megamac` génère autour d'elles la crate de macro documentée.
+
+## L'objectif
+
+Nous voulions un workspace unique offrant cinq macros prêtes à l'emploi (`edoc`, `wrap`, `seanum`, `folder_iso_struct` et `megamac`) accompagnées d'une boîte à outils de diagnostic sans panique (`rsmack-utils`) remplaçant la crate non maintenue `proc-macro-error2`.
+
+## L'architecture
+
+`megamac` inspecte la signature et les commentaires de documentation de votre `pub struct Args` et de votre `pub fn exec` pour émettre automatiquement le point d'entrée de la macro, l'analyseur de protocole et les commentaires de documentation.
+
+<CardGrid stagger>
+  <Card title="megamac" icon="setting">
+    Fabrique pilotée par les signatures qui génère des macros fonctionnelles, d'attribut et derive à partir d'une simple fonction Rust `exec`.
+  </Card>
+  <Card title="edoc & wrap" icon="puzzle">
+    `edoc` évalue des expressions constantes typées dans les commentaires de documentation ; `wrap` génère des enveloppes de champs acceptant des entrées `Into<T>`.
+  </Card>
+  <Card title="seanum & folder_iso_struct" icon="rocket">
+    `seanum` génère des énumérations actives `SeaORM` avec discriminants et migrations ; `folder_iso_struct` reflète des arborescences de répertoires à la compilation.
+  </Card>
+  <Card title="Diagnostics sans panique" icon="approve-check">
+    `rsmack-utils` fournit `ExecEnv` et `Logr` au-dessus de `syn::Error` afin que les erreurs de syntaxe émettent des spans de compilation plutôt que des paniques de macro.
+  </Card>
+</CardGrid>
+
+## Ce que cela a coûté
+
+Comme `megamac` génère les points d'entrée de macros à partir de votre structure `Args`, vos types d'arguments doivent respecter les conventions de champs et d'attributs de `rsmack`. Nous maintenons également `rsmack-example-macros` comme suite de tests de bout en bout vivante exerçant chaque type de macro — y compris les macros DSL à charge utile brute — à chaque exécution de la CI.
+
+<Aside type="caution" title="Limites">
+`rsmack` est optimisé pour les macros d'attributs structurées clé-valeur et les macros derive. Si vous concevez une macro qui analyse une grammaire arbitraire non Rust avec des règles personnalisées de retour arrière, écrire directement une implémentation manuelle de `syn::parse::Parse` reste plus clair.
+</Aside>
+
+## Démarrer
+
+```toml
+[dependencies]
+rsmack = "0.1"
+```
+
+```rust
+use rsmack_megamac::megamac;
+
+mod impls;
+megamac!(kind = Derive, name = type_name);
+```
+
+Suivez le [tutoriel de démarrage](/fr/tutorials/getting-started/) pour utiliser les macros fournies ou générer les vôtres avec `megamac`.
