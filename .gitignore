@@ -2,3 +2,7 @@
 *.profraw
 .vercel
 .env*
+
+# Build-time backups
+*.bak
+*.orig
