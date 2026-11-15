@@ -1,0 +1,61 @@
+---
+title: How we built a proc-macro factory that generates its own documentation
+date: 2026-11-15
+cover:
+  alt: Rsmack Architecture
+  image: ./welcome-cover.jpg
+image: ./welcome-cover.jpg
+---
+
+import { Card, CardGrid, Aside } from '@astrojs/starlight/components';
+
+Writing procedural macros in Rust means repeating the same boilerplate every time: parsing attribute tokens, routing `syn::Error` diagnostics, keeping doc comments in sync with accepted arguments, and wiring crate entrypoints.
+
+We built `rsmack` (`0.1`) so you only write the `Args` struct and the `exec` transformation function, and `megamac` generates the documented macro crate around it.
+
+## The Goal
+
+We wanted a single workspace that provides five ready-to-use macros (`edoc`, `wrap`, `seanum`, `folder_iso_struct`, and `megamac`) alongside a panic-free diagnostic toolkit (`rsmack-utils`) that replaces the unmaintained `proc-macro-error2` crate.
+
+## The Architecture
+
+`megamac` inspects the signature and doc comments of your `pub struct Args` and `pub fn exec` to emit the macro entrypoint, protocol parser, and documentation comments automatically.
+
+<CardGrid stagger>
+  <Card title="megamac" icon="setting">
+    Signature-driven factory that generates function-like, attribute, and derive macros from a plain Rust `exec` function.
+  </Card>
+  <Card title="edoc & wrap" icon="puzzle">
+    `edoc` evaluates typed const expressions into doc comments; `wrap` generates field wrappers that accept `Into<T>` inputs.
+  </Card>
+  <Card title="seanum & folder_iso_struct" icon="rocket">
+    `seanum` generates `SeaORM` active enums with discriminants and migrations; `folder_iso_struct` mirrors directory trees at compile time.
+  </Card>
+  <Card title="Panic-Free Diagnostics" icon="approve-check">
+    `rsmack-utils` provides `ExecEnv` and `Logr` on top of `syn::Error` so syntax mistakes emit compiler spans instead of macro panics.
+  </Card>
+</CardGrid>
+
+## What it cost
+
+Because `megamac` generates macro entrypoints from your `Args` struct, your argument types have to follow `rsmack`'s field and attribute conventions. We also maintain `rsmack-example-macros` as a living end-to-end test suite exercising every macro kind—including raw-payload DSL macros—on every CI run.
+
+<Aside type="caution" title="Limitations">
+`rsmack` optimizes for structured key-value attribute macros and derive macros. If you are building a macro that parses an arbitrary, non-Rust grammar with custom backtracking rules, writing a hand-rolled `syn::parse::Parse` implementation directly is still clearer.
+</Aside>
+
+## Getting started
+
+```toml
+[dependencies]
+rsmack = "0.1"
+```
+
+```rust
+use rsmack_megamac::megamac;
+
+mod impls;
+megamac!(kind = Derive, name = type_name);
+```
+
+Follow the [getting started tutorial](/tutorials/getting-started/) to use the shipped macros or generate your own with `megamac`.
