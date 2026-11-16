@@ -79,7 +79,7 @@ assert_eq!(GREETING, "Hello world!");`} />
 
 Changez la signature `exec` pour prendre un `TokenStream` brut — la signature *est* la configuration :
 
-<Code lang="rust" title="src/lib.rs" code={`// src/impls/shout.rs — déclarée avec megamac!(kind = Func, name = shout);
+<Code lang="rust" title="src/impls/shout.rs" code={`// src/impls/shout.rs — déclarée avec megamac!(kind = Func, name = shout);
 use proc_macro2::TokenStream;
 use rsmack_utils::megamac::ExecEnv;
 
