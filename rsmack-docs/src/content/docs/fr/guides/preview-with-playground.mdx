@@ -12,17 +12,17 @@ Le binaire `playground` dans [`rsmack-megamac`](/reference/megamac/) imprime le 
 
 Dans le dépôt rsmack :
 
-<Code lang="shell" title="Terminal" code={`cargo run -p rsmack-megamac --bin playground -- --kind Attr --name edoc`} />
+<Code lang="shell" title="Terminal" code={"cargo run -p rsmack-megamac --bin playground -- --kind Attr --name edoc"} />
 
 ## L'exécuter dans votre propre crate
 
 Le binaire est livré avec la crate publiée `rsmack-megamac`. Installez-le une fois :
 
-<Code lang="shell" title="Terminal" code={`cargo install rsmack-megamac`} />
+<Code lang="shell" title="Terminal" code={"cargo install rsmack-megamac"} />
 
 Puis lancez-le depuis la racine de votre crate, où `--src-dir` vaut `$CARGO_MANIFEST_DIR/src` par défaut :
 
-<Code lang="shell" title="Terminal" code={`playground --kind Func --name greeting`} />
+<Code lang="shell" title="Terminal" code={"playground --kind Func --name greeting"} />
 
 La sortie est le source du point d'entrée généré — la signature de la fonction proc-macro et le commentaire de doc assemblé depuis les docs de votre `Args` — imprimée sur stdout.
 

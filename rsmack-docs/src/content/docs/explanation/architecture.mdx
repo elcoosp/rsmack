@@ -37,9 +37,7 @@ flowchart TD
 
 The `rsmack` crate is a re-export shim. Each macro sits behind a feature, and `full` (the default) enables all of them:
 
-<Code lang="toml" code={`[features]
-default = ["full"]
-full = ["edoc", "wrap", "seanum", "fs", "megamac"]`} />
+<Code lang="toml" code={"[features]\ndefault = [\"full\"]\nfull = [\"edoc\", \"wrap\", \"seanum\", \"fs\", \"megamac\"]"} />
 
 Depending on `rsmack` gives you every macro through one import surface; depending on the standalone crates (`rsmack-edoc`, `rsmack-wrap`, ...) keeps compile times down when you need one macro.
 
@@ -47,7 +45,7 @@ Depending on `rsmack` gives you every macro through one import surface; dependin
 
 The shipped macros do not hand-write their entrypoints. Each crate's `src/lib.rs` contains a declaration like:
 
-<Code lang="rust" title="src/lib.rs" code={`megamac!(kind = Attr, name = edoc, doc = "readme");`} />
+<Code lang="rust" title="src/lib.rs" code={"megamac!(kind = Attr, name = edoc, doc = \"readme\");"} />
 
 The entrypoint function, the payload parsing, and the generated documentation all come from the same machinery you use to write your own macros. When the factory improves — richer docs, faster memoization — every shipped macro inherits the improvement.
 

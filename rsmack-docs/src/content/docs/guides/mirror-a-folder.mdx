@@ -21,16 +21,7 @@ Start from a folder of modules that your crate already declares:
 		- main.rs
 </FileTree>
 
-<Code lang="rust" title="src/main.rs" code={`mod levels;
-
-use rsmack_fs::folder_iso_struct;
-
-#[folder_iso_struct(folder = "levels", vis = "pub", derives("Debug"))]
-pub struct Levels {
-    // The declared fields are a sketch only: the mirror is generated from the folder.
-    #[expect(dead_code)]
-    alpha: (),
-}`} />
+<Code lang="rust" title="src/main.rs" code={"mod levels;\n\nuse rsmack_fs::folder_iso_struct;\n\n#[folder_iso_struct(folder = \"levels\", vis = \"pub\", derives(\"Debug\"))]\npub struct Levels {\n    // The declared fields are a sketch only: the mirror is generated from the folder.\n    #[expect(dead_code)]\n    alpha: (),\n}"} />
 
 The macro scans `src/levels/`, skips `mod.rs`, and generates one field per file stem. `button.rs` becomes a field `button` of type `crate::levels::button::Button`; `beta_gamma.rs` becomes `beta_gamma: crate::levels::beta_gamma::BetaGamma`. The field names are snake_case and the type names are PascalCase conversions of the stem.
 
@@ -51,8 +42,7 @@ With `recursive = true`, each subdirectory becomes an inline `pub mod <name>` ho
 				- settings.rs
 </FileTree>
 
-<Code lang="rust" code={`#[folder_iso_struct(folder = "ui/screens", recursive = true, derives("Debug"))]
-pub struct Screens {}`} />
+<Code lang="rust" code={"#[folder_iso_struct(folder = \"ui/screens\", recursive = true, derives(\"Debug\"))]\npub struct Screens {}"} />
 
 ## What carries over
 

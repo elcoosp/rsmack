@@ -10,13 +10,7 @@ import { Badge, Code, LinkCard } from '@astrojs/starlight/components';
 
 ## Signature
 
-<Code lang="rust" title="src/lib.rs" code={`#[seanum(
-    rs_type = "String",
-    db_type = "String(sea_orm::sea_query::StringLen::None)",
-    rename_all = "snake_case",
-    derives("::serde::Serialize", "::serde::Deserialize")
-)]
-pub enum SwitchAction { ... }`} />
+<Code lang="rust" title="src/lib.rs" code={"#[seanum(\n    rs_type = \"String\",\n    db_type = \"String(sea_orm::sea_query::StringLen::None)\",\n    rename_all = \"snake_case\",\n    derives(\"::serde::Serialize\", \"::serde::Deserialize\")\n)]\npub enum SwitchAction { ... }"} />
 
 ## Arguments d'élément
 

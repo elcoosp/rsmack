@@ -12,17 +12,7 @@ Les macros qui paniquent produisent des ICE — erreurs internes du compilateur 
 
 Quand l'expansion ne peut pas continuer, renvoyez un `syn::Error` avec `?` et passez le `Result` à `ExecEnv::finish_result` :
 
-<Code lang="rust" title="src/lib.rs" code={`pub fn exec(args: Args, env: &ExecEnv) -> TokenStream {
-    env.finish_result(run(args))
-}
-
-fn run(args: Args) -> syn::Result<TokenStream> {
-    let path = args.path;
-    let file = std::fs::read_to_string(&path)
-                    .map_err(|e| syn::Error::new(path.span(), format!("Failed to read file \`{path}\`: {e}")))?;
-    // ...
-    Ok(quote::quote! {})
-}`} />
+<Code lang="rust" title="src/lib.rs" code={"pub fn exec(args: Args, env: &ExecEnv) -> TokenStream {\n    env.finish_result(run(args))\n}\n\nfn run(args: Args) -> syn::Result<TokenStream> {\n    let path = args.path;\n    let file = std::fs::read_to_string(&path)\n                    .map_err(|e| syn::Error::new(path.span(), format!(\"Failed to read file `{path}`: {e}\")))?;\n    // ...\n    Ok(quote::quote! {})\n}"} />
 
 L'erreur est rendue comme un `compile_error!` au span fautif, préfixée `#[your_crate::your_macro]`.
 
@@ -30,12 +20,7 @@ L'erreur est rendue comme un `compile_error!` au span fautif, préfixée `#[your
 
 Quand un champ cassé ne doit pas cacher les autres, collectez les erreurs avec `Logr::emit_error` et videz à la fin. `ExecEnv` possède déjà un `Logr` ; `env.finish(...)` vide les erreurs collectées comme jetons `compile_error!` ajoutés à une sortie autrement valide :
 
-<Code lang="rust" code={`for field in args.fields {
-    if field.ident.is_none() {
-                    env.logr.emit_error(field.span(), "Only named fields supported");
-    }
-}
-env.finish(generate_output())`} />
+<Code lang="rust" code={"for field in args.fields {\n    if field.ident.is_none() {\n                    env.logr.emit_error(field.span(), \"Only named fields supported\");\n    }\n}\nenv.finish(generate_output())"} />
 
 Un élément cassé rapporte **chaque** problème en une seule passe — l'UX que `proc-macro-error2` a inaugurée, sans la dépendance abandonnée.
 

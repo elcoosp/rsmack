@@ -12,17 +12,17 @@ The `playground` binary in [`rsmack-megamac`](/reference/megamac/) prints the co
 
 Inside the rsmack repository:
 
-<Code lang="shell" title="Terminal" code={`cargo run -p rsmack-megamac --bin playground -- --kind Attr --name edoc`} />
+<Code lang="shell" title="Terminal" code={"cargo run -p rsmack-megamac --bin playground -- --kind Attr --name edoc"} />
 
 ## Run it in your own crate
 
 The binary ships with the published `rsmack-megamac` crate. Install it once:
 
-<Code lang="shell" title="Terminal" code={`cargo install rsmack-megamac`} />
+<Code lang="shell" title="Terminal" code={"cargo install rsmack-megamac"} />
 
 Then run it from your crate root, where `--src-dir` defaults to `$CARGO_MANIFEST_DIR/src`:
 
-<Code lang="shell" title="Terminal" code={`playground --kind Func --name greeting`} />
+<Code lang="shell" title="Terminal" code={"playground --kind Func --name greeting"} />
 
 The output is the generated entrypoint source — the proc-macro function signature and the doc comment assembled from your `Args` docs — printed to stdout.
 

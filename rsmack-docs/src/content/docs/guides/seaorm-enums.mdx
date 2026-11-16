@@ -10,21 +10,7 @@ Use [`seanum`](/reference/seanum/) when an enum must live in a database through 
 
 ## Define a string-backed enum
 
-<Code lang="rust" title="src/lib.rs" code={`use rsmack_seanum::seanum;
-
-#[seanum(
-    rs_type = "String",
-    db_type = "String(sea_orm::sea_query::StringLen::None)",
-    rename_all = "snake_case",
-    derives("::serde::Serialize", "::serde::Deserialize")
-)]
-#[derive(Default)]
-pub enum SwitchAction {
-    #[default]
-    #[seanum(rename = "send_email")]
-    SendEmail,
-    SendSms,
-}`} />
+<Code lang="rust" title="src/lib.rs" code={"use rsmack_seanum::seanum;\n\n#[seanum(\n    rs_type = \"String\",\n    db_type = \"String(sea_orm::sea_query::StringLen::None)\",\n    rename_all = \"snake_case\",\n    derives(\"::serde::Serialize\", \"::serde::Deserialize\")\n)]\n#[derive(Default)]\npub enum SwitchAction {\n    #[default]\n    #[seanum(rename = \"send_email\")]\n    SendEmail,\n    SendSms,\n}"} />
 
 The generated values are `send_email` (explicit `rename` wins over `rename_all`) and `send_sms`. The default derives are `Clone`, `Debug`, `PartialEq`, `Eq`, `Hash`, `EnumIter`, and `DeriveActiveEnum` — `serde` and `fake` support is opt-in through `derives(...)`, never a hidden dependency.
 
@@ -32,12 +18,7 @@ The generated values are `send_email` (explicit `rename` wins over `rename_all`)
 
 With an integer `rs_type` from `i8` through `u64` (plus `isize`/`usize`), the macro adds `#[repr(...)]`, a `#[sea_orm(num_value = N)]` on every variant, and a value-based `TryFrom`:
 
-<Code lang="rust" title="src/lib.rs" code={`#[seanum(rs_type = "i32", db_type = "Integer")]
-pub enum Level {
-    Low = 10,
-    Medium, // continues from 11
-    High,
-}`} />
+<Code lang="rust" title="src/lib.rs" code={"#[seanum(rs_type = \"i32\", db_type = \"Integer\")]\npub enum Level {\n    Low = 10,\n    Medium, // continues from 11\n    High,\n}"} />
 
 Explicit discriminants are honored and later variants continue from them. Duplicates are reported as a collected error and the `TryFrom` is skipped, while the enum itself still compiles.
 
@@ -45,11 +26,7 @@ Explicit discriminants are honored and later variants continue from them. Duplic
 
 `migration = true` emits a `migration_column_def()` helper for use with [`sea-orm-migration`](https://docs.rs/sea-orm-migration):
 
-<Code lang="rust" title="src/lib.rs" code={`#[seanum(rs_type = "String", db_type = "Text", migration = true)]
-pub enum Status {
-    Active,
-    Retired,
-}`} />
+<Code lang="rust" title="src/lib.rs" code={"#[seanum(rs_type = \"String\", db_type = \"Text\", migration = true)]\npub enum Status {\n    Active,\n    Retired,\n}"} />
 
 The helper maps the `db_type` to the matching `ColumnDef` method — `Text`, `Integer`, `BigInt`, `Boolean`, `DateTime`, and twelve more are covered.
 

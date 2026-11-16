@@ -10,7 +10,7 @@ import { Badge, Code, LinkCard } from '@astrojs/starlight/components';
 
 ## Invocation
 
-<Code lang="rust" code={`megamac!(kind = Attr, name = edoc, impls = "impls", args = "Args", doc = "readme");`} />
+<Code lang="rust" code={"megamac!(kind = Attr, name = edoc, impls = \"impls\", args = \"Args\", doc = \"readme\");"} />
 
 ## Arguments
 
@@ -78,7 +78,7 @@ The impl-file analysis is cached per process keyed by `(path, mtime, len, kind, 
 
 ## Playground
 
-<Code lang="shell" title="Terminal" code={`cargo run -p rsmack-megamac --bin playground -- --kind Attr --name edoc`} />
+<Code lang="shell" title="Terminal" code={"cargo run -p rsmack-megamac --bin playground -- --kind Attr --name edoc"} />
 
 Prints the expansion without compiling. Flags: `--kind`, `--name` (required), `--src-dir` (default `$CARGO_MANIFEST_DIR/src`), `--impls`, `--args`, `--doc`.
 

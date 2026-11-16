@@ -15,8 +15,7 @@ Dans ce tutoriel vous installez `rsmack`, documentez les champs d'une struct dep
 
 ## 1. Créer une crate
 
-<Code lang="shell" title="Terminal" code={`cargo new rsmack-demo
-cd rsmack-demo`} />
+<Code lang="shell" title="Terminal" code={"cargo new rsmack-demo\ncd rsmack-demo"} />
 
 ## 2. Ajouter la dépendance
 
@@ -24,11 +23,10 @@ Une seule dépendance apporte chaque macro :
 
 <Tabs>
 	<TabItem label="cargo add">
-<Code lang="shell" title="Terminal" code={`		cargo add rsmack`} />
+<Code lang="shell" title="Terminal" code={"\t\tcargo add rsmack"} />
 	</TabItem>
 	<TabItem label="Cargo.toml">
-<Code lang="toml" code={`		[dependencies]
-		rsmack = "1"`} />
+<Code lang="toml" code={"\t\t[dependencies]\n\t\trsmack = \"1\""} />
 	</TabItem>
 </Tabs>
 
@@ -38,9 +36,7 @@ La façade `rsmack` ré-exporte les cinq macros derrière sa fonctionnalité `fu
 
 `edoc` lit les constantes depuis un vrai fichier dans le répertoire `src/` de votre crate. Créez `src/consts.rs` :
 
-<Code lang="rust" title="src/consts.rs" code={`pub const APP: &str = "myapp";
-pub const MAJOR: i32 = 1;
-pub const TAG: &str = concat!("v", MAJOR);`} />
+<Code lang="rust" title="src/consts.rs" code={"pub const APP: &str = \"myapp\";\npub const MAJOR: i32 = 1;\npub const TAG: &str = concat!(\"v\", MAJOR);"} />
 
 <Aside kind="caution" title="Les constantes vivent dans un fichier, pas dans un module inline">
 	`edoc` résout `from = consts` vers le chemin `src/consts.rs` sur disque et analyse ce fichier. Un `mod consts { ... }` inline dans un autre fichier ne satisfait pas la recherche. Gardez les constantes dans leur propre fichier.
@@ -50,34 +46,23 @@ pub const TAG: &str = concat!("v", MAJOR);`} />
 
 Remplacez `src/main.rs` par :
 
-<Code lang="rust" title="src/main.rs" code={`use rsmack::edoc;
-
-#[edoc(from = consts)]
-struct Client {
-    /// Fallback docs: replaced by the edoc tuple below.
-    #[edoc(("Client ", APP, " tag ", TAG, " build ", 2 * 21))]
-    name: String,
-}
-
-fn main() {
-    let _client = Client { name: "demo".to_string() };
-}`} />
+<Code lang="rust" title="src/main.rs" code={"use rsmack::edoc;\n\n#[edoc(from = consts)]\nstruct Client {\n    /// Fallback docs: replaced by the edoc tuple below.\n    #[edoc((\"Client \", APP, \" tag \", TAG, \" build \", 2 * 21))]\n    name: String,\n}\n\nfn main() {\n    let _client = Client { name: \"demo\".to_string() };\n}"} />
 
 Chaque tuple `#[edoc((...))]` évalue ses éléments — littéraux de chaîne, références constantes et expressions const telles que `2 * 21` — et transforme la concaténation en vrai attribut `#[doc]` sur le champ. Les valeurs d'éléments gardent leurs types machine (`i128`, `f64`, `&str`, ...) jusqu'à l'assemblage des docs.
 
 Compilez une fois pour vérifier que tout s'expanse :
 
-<Code lang="shell" title="Terminal" code={`cargo build`} />
+<Code lang="shell" title="Terminal" code={"cargo build"} />
 
 La commande se termine sans erreur. Si une constante est mal orthographiée, le compilateur rapporte `#[rsmack_edoc::edoc] Unresolved const ident ...` et chaque autre expression cassée sur l'élément dans la même passe.
 
 ## 5. Lire les docs générées
 
-<Code lang="shell" title="Terminal" code={`cargo doc --no-deps --open`} />
+<Code lang="shell" title="Terminal" code={"cargo doc --no-deps --open"} />
 
 Naviguez vers `Client` puis vers le champ `name`. Le texte rendu lit :
 
-<Code lang="text" code={`Client myapp tag v1 build 42`} />
+<Code lang="text" code={"Client myapp tag v1 build 42"} />
 
 `APP` se rend comme `myapp`, `TAG` résout la référence const-à-const en `v1`, et l'expression `2 * 21` s'évalue à `42`.
 
@@ -85,20 +70,7 @@ Naviguez vers `Client` puis vers le champ `name`. Le texte rendu lit :
 
 Ajoutez `wrap` à la même struct — ou à une seconde, comme ici — et chaque type de champ est enveloppé dans le type générique que vous nommez :
 
-<Code lang="rust" title="src/main.rs" code={`use rsmack::wrap;
-
-#[wrap(with = Option)]
-struct UserDraft {
-    name: String, // devient Option<String>
-    email: String, // devient Option<Vec<String>> pour les champs Vec, et ainsi de suite
-}
-
-fn main() {
-    let draft = UserDraft {
-                    name: None,
-                    email: None,
-    };
-}`} />
+<Code lang="rust" title="src/main.rs" code={"use rsmack::wrap;\n\n#[wrap(with = Option)]\nstruct UserDraft {\n    name: String, // devient Option<String>\n    email: String, // devient Option<Vec<String>> pour les champs Vec, et ainsi de suite\n}\n\nfn main() {\n    let draft = UserDraft {\n                    name: None,\n                    email: None,\n    };\n}"} />
 
 Les champs sont maintenant `Option<String>`. Le contrôle par champ est disponible avec `#[wrap(skip)]`, `#[wrap(with = "Box")]`, et `#[wrap(with = "Vec", map = "u8")]` — voir le [guide `wrap`](/guides/wrap-field-types/) pour le comportement complet.
 

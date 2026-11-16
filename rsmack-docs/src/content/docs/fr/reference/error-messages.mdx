@@ -10,7 +10,7 @@ Chaque diagnostic d'une macro rsmack est un `compile_error!` — jamais une pani
 
 ## Format du message
 
-<Code lang="text" code={`error: #[<crate>::<macro>] <message>`} />
+<Code lang="text" code={"error: #[<crate>::<macro>] <message>"} />
 
 Préfixes réels : `#[rsmack_edoc::edoc]`, `#[rsmack_wrap::wrap]`, `#[rsmack_seanum::seanum]`, `#[rsmack_fs::folder_iso_struct]`, `#[rsmack_megamac::megamac]`. Les spans pointent vers les jetons fautifs, ou vers l'invocation entière pour les fatales au site d'appel.
 

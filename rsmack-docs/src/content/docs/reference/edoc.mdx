@@ -10,9 +10,7 @@ import { Badge, Code, LinkCard } from '@astrojs/starlight/components';
 
 ## Signature
 
-<Code lang="rust" code={`#[edoc(from = path::to::consts)]
-#[edoc(("Element ", CONST, " expression ", 2 * 21))]
-struct Item { ... }`} />
+<Code lang="rust" code={"#[edoc(from = path::to::consts)]\n#[edoc((\"Element \", CONST, \" expression \", 2 * 21))]\nstruct Item { ... }"} />
 
 ## Item arguments
 
@@ -71,15 +69,7 @@ Anything else reports `Unsupported const expression '...'` or `Unsupported const
 
 ## Example
 
-<Code lang="rust" code={`use rsmack_edoc::edoc;
-
-#[edoc(from = consts)]
-#[edoc(("The ", APP, " client"))]
-enum State {
-    #[edoc(("Idle since ", TAG))]
-    Idle,
-    Busy,
-}`} />
+<Code lang="rust" code={"use rsmack_edoc::edoc;\n\n#[edoc(from = consts)]\n#[edoc((\"The \", APP, \" client\"))]\nenum State {\n    #[edoc((\"Idle since \", TAG))]\n    Idle,\n    Busy,\n}"} />
 
 ## Next steps
 

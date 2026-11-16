@@ -10,7 +10,7 @@ import { Badge, Code, LinkCard } from '@astrojs/starlight/components';
 
 ## Invocation
 
-<Code lang="rust" code={`megamac!(kind = Attr, name = edoc, impls = "impls", args = "Args", doc = "readme");`} />
+<Code lang="rust" code={"megamac!(kind = Attr, name = edoc, impls = \"impls\", args = \"Args\", doc = \"readme\");"} />
 
 ## Arguments
 
@@ -78,7 +78,7 @@ L'analyse du fichier d'implémentation est mise en cache par processus et index�
 
 ## Playground
 
-<Code lang="shell" title="Terminal" code={`cargo run -p rsmack-megamac --bin playground -- --kind Attr --name edoc`} />
+<Code lang="shell" title="Terminal" code={"cargo run -p rsmack-megamac --bin playground -- --kind Attr --name edoc"} />
 
 Imprime l'expansion sans compiler. Drapeaux : `--kind`, `--name` (requis), `--src-dir` (défaut `$CARGO_MANIFEST_DIR/src`), `--impls`, `--args`, `--doc`.
 

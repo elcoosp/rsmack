@@ -10,53 +10,21 @@ Utilisez [`megamac`](/reference/megamac/) pour écrire votre propre proc-macro. 
 
 ## 1. Créer une crate proc-macro
 
-<Code lang="shell" title="Terminal" code={`cargo new my-macros --lib
-cd my-macros`} />
+<Code lang="shell" title="Terminal" code={"cargo new my-macros --lib\ncd my-macros"} />
 
 Marquez la crate comme crate proc-macro et ajoutez les deux dépendances rsmack — `rsmack-megamac` pour la génération de code et `rsmack-utils` parce que le code généré route par ses pilotes d'entrée :
 
-<Code lang="toml" title="Cargo.toml" code={`[lib]
-proc-macro = true
-
-[dependencies]
-rsmack-megamac = "1"
-rsmack-utils = "1"
-darling = "0.24"
-proc-macro2 = "1"
-quote = "1"
-syn = "3"`} />
+<Code lang="toml" title="Cargo.toml" code={"[lib]\nproc-macro = true\n\n[dependencies]\nrsmack-megamac = \"1\"\nrsmack-utils = \"1\"\ndarling = \"0.24\"\nproc-macro2 = \"1\"\nquote = \"1\"\nsyn = \"3\""} />
 
 ## 2. Déclarer la macro
 
-<Code lang="rust" title="src/lib.rs" code={`use rsmack_megamac::megamac;
-
-mod impls;
-
-// Génère une macro fonction-like \`greeting!\` documentée depuis
-// les commentaires de doc d'\`Args\` dans src/impls/greeting.rs.
-megamac!(kind = Func, name = greeting);`} />
+<Code lang="rust" title="src/lib.rs" code={"use rsmack_megamac::megamac;\n\nmod impls;\n\n// G\u00e9n\u00e8re une macro fonction-like `greeting!` document\u00e9e depuis\n// les commentaires de doc d'`Args` dans src/impls/greeting.rs.\nmegamac!(kind = Func, name = greeting);"} />
 
 ## 3. Écrire l'implémentation
 
 La convention est `src/impls/<name>.rs` avec une struct `Args` documentée et une fonction `exec` :
 
-<Code lang="rust" title="src/impls/greeting.rs" code={`use darling::FromMeta;
-use proc_macro2::TokenStream;
-use rsmack_utils::megamac::ExecEnv;
-
-/// Greeting configuration
-#[derive(Debug, FromMeta)]
-pub struct Args {
-    /// Recipient of the greeting
-    pub who: String,
-}
-
-pub fn exec(args: Args, env: &ExecEnv) -> TokenStream {
-    let who = args.who;
-    env.finish(quote::quote! {
-                    pub const GREETING: &str = concat!("Hello ", #who, "!");
-    })
-}`} />
+<Code lang="rust" title="src/impls/greeting.rs" code={"use darling::FromMeta;\nuse proc_macro2::TokenStream;\nuse rsmack_utils::megamac::ExecEnv;\n\n/// Greeting configuration\n#[derive(Debug, FromMeta)]\npub struct Args {\n    /// Recipient of the greeting\n    pub who: String,\n}\n\npub fn exec(args: Args, env: &ExecEnv) -> TokenStream {\n    let who = args.who;\n    env.finish(quote::quote! {\n                    pub const GREETING: &str = concat!(\"Hello \", #who, \"!\");\n    })\n}"} />
 
 Les commentaires de doc deviennent la documentation de la macro générée : la doc de struct est l'introduction, et chaque doc de champ devient une puce `# Parameters` avec son type. Les champs qui sont `Option<T>` ou qui portent `#[darling(default)]` sont marqués *(optional)*.
 
@@ -64,8 +32,7 @@ Les commentaires de doc deviennent la documentation de la macro générée : la 
 
 Depuis une crate qui dépend de `my-macros` :
 
-<Code lang="rust" code={`my_macros::greeting!(who = "world");
-assert_eq!(GREETING, "Hello world!");`} />
+<Code lang="rust" code={"my_macros::greeting!(who = \"world\");\nassert_eq!(GREETING, \"Hello world!\");"} />
 
 ## Choisir le type de macro
 
@@ -79,17 +46,9 @@ assert_eq!(GREETING, "Hello world!");`} />
 
 Changez la signature `exec` pour prendre un `TokenStream` brut — la signature *est* la configuration :
 
-<Code lang="rust" title="src/impls/shout.rs" code={`// src/impls/shout.rs — déclarée avec megamac!(kind = Func, name = shout);
-use proc_macro2::TokenStream;
-use rsmack_utils::megamac::ExecEnv;
+<Code lang="rust" title="src/impls/shout.rs" code={"// src/impls/shout.rs \u2014 d\u00e9clar\u00e9e avec megamac!(kind = Func, name = shout);\nuse proc_macro2::TokenStream;\nuse rsmack_utils::megamac::ExecEnv;\n\npub fn exec(input: TokenStream, env: &ExecEnv) -> TokenStream {\n    let shouted = input.to_string().to_uppercase();\n    env.finish(quote::quote! { pub const SHOUTED: &str = #shouted; })\n}"} />
 
-pub fn exec(input: TokenStream, env: &ExecEnv) -> TokenStream {
-    let shouted = input.to_string().to_uppercase();
-    env.finish(quote::quote! { pub const SHOUTED: &str = #shouted; })
-}`} />
-
-<Code lang="rust" code={`my_macros::shout!(hello megamac);
-assert_eq!(SHOUTED, "HELLO MEGAMAC");`} />
+<Code lang="rust" code={"my_macros::shout!(hello megamac);\nassert_eq!(SHOUTED, \"HELLO MEGAMAC\");"} />
 
 <Aside kind="caution" title="Retirer args quand la charge utile est brute">
 	`args = "MyArgs"` combiné avec une signature `TokenStream` brute est une erreur de configuration fatale : retirez `args` ou changez la signature.

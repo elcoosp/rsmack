@@ -10,53 +10,21 @@ Use [`megamac`](/reference/megamac/) to author your own proc macro. You declare 
 
 ## 1. Create a proc-macro crate
 
-<Code lang="shell" title="Terminal" code={`cargo new my-macros --lib
-cd my-macros`} />
+<Code lang="shell" title="Terminal" code={"cargo new my-macros --lib\ncd my-macros"} />
 
 Mark the crate as a proc-macro crate and add both rsmack dependencies — `rsmack-megamac` for the codegen and `rsmack-utils` because the generated code routes through its entrypoint drivers:
 
-<Code lang="toml" title="Cargo.toml" code={`[lib]
-proc-macro = true
-
-[dependencies]
-rsmack-megamac = "1"
-rsmack-utils = "1"
-darling = "0.24"
-proc-macro2 = "1"
-quote = "1"
-syn = "3"`} />
+<Code lang="toml" title="Cargo.toml" code={"[lib]\nproc-macro = true\n\n[dependencies]\nrsmack-megamac = \"1\"\nrsmack-utils = \"1\"\ndarling = \"0.24\"\nproc-macro2 = \"1\"\nquote = \"1\"\nsyn = \"3\""} />
 
 ## 2. Declare the macro
 
-<Code lang="rust" title="src/lib.rs" code={`use rsmack_megamac::megamac;
-
-mod impls;
-
-// Generates a function-like \`greeting!\` macro documented from
-// src/impls/greeting.rs's \`Args\` doc comments.
-megamac!(kind = Func, name = greeting);`} />
+<Code lang="rust" title="src/lib.rs" code={"use rsmack_megamac::megamac;\n\nmod impls;\n\n// Generates a function-like `greeting!` macro documented from\n// src/impls/greeting.rs's `Args` doc comments.\nmegamac!(kind = Func, name = greeting);"} />
 
 ## 3. Write the implementation
 
 The convention is `src/impls/<name>.rs` with a documented `Args` struct and an `exec` function:
 
-<Code lang="rust" title="src/impls/greeting.rs" code={`use darling::FromMeta;
-use proc_macro2::TokenStream;
-use rsmack_utils::megamac::ExecEnv;
-
-/// Greeting configuration
-#[derive(Debug, FromMeta)]
-pub struct Args {
-    /// Recipient of the greeting
-    pub who: String,
-}
-
-pub fn exec(args: Args, env: &ExecEnv) -> TokenStream {
-    let who = args.who;
-    env.finish(quote::quote! {
-                    pub const GREETING: &str = concat!("Hello ", #who, "!");
-    })
-}`} />
+<Code lang="rust" title="src/impls/greeting.rs" code={"use darling::FromMeta;\nuse proc_macro2::TokenStream;\nuse rsmack_utils::megamac::ExecEnv;\n\n/// Greeting configuration\n#[derive(Debug, FromMeta)]\npub struct Args {\n    /// Recipient of the greeting\n    pub who: String,\n}\n\npub fn exec(args: Args, env: &ExecEnv) -> TokenStream {\n    let who = args.who;\n    env.finish(quote::quote! {\n                    pub const GREETING: &str = concat!(\"Hello \", #who, \"!\");\n    })\n}"} />
 
 Doc comments become the generated macro's documentation: the struct doc is the intro, and each field doc becomes a `# Parameters` bullet with its type. Fields that are `Option<T>` or carry `#[darling(default)]` are marked *(optional)*.
 
@@ -64,8 +32,7 @@ Doc comments become the generated macro's documentation: the struct doc is the i
 
 From a crate that depends on `my-macros`:
 
-<Code lang="rust" code={`my_macros::greeting!(who = "world");
-assert_eq!(GREETING, "Hello world!");`} />
+<Code lang="rust" code={"my_macros::greeting!(who = \"world\");\nassert_eq!(GREETING, \"Hello world!\");"} />
 
 ## Pick the macro kind
 
@@ -79,17 +46,9 @@ assert_eq!(GREETING, "Hello world!");`} />
 
 Change the `exec` signature to take a raw `TokenStream` — the signature *is* the configuration:
 
-<Code lang="rust" title="src/impls/shout.rs" code={`// src/impls/shout.rs — declared with megamac!(kind = Func, name = shout);
-use proc_macro2::TokenStream;
-use rsmack_utils::megamac::ExecEnv;
+<Code lang="rust" title="src/impls/shout.rs" code={"// src/impls/shout.rs \u2014 declared with megamac!(kind = Func, name = shout);\nuse proc_macro2::TokenStream;\nuse rsmack_utils::megamac::ExecEnv;\n\npub fn exec(input: TokenStream, env: &ExecEnv) -> TokenStream {\n    let shouted = input.to_string().to_uppercase();\n    env.finish(quote::quote! { pub const SHOUTED: &str = #shouted; })\n}"} />
 
-pub fn exec(input: TokenStream, env: &ExecEnv) -> TokenStream {
-    let shouted = input.to_string().to_uppercase();
-    env.finish(quote::quote! { pub const SHOUTED: &str = #shouted; })
-}`} />
-
-<Code lang="rust" code={`my_macros::shout!(hello megamac);
-assert_eq!(SHOUTED, "HELLO MEGAMAC");`} />
+<Code lang="rust" code={"my_macros::shout!(hello megamac);\nassert_eq!(SHOUTED, \"HELLO MEGAMAC\");"} />
 
 <Aside kind="caution" title="Drop args when the payload is raw">
 	`args = "MyArgs"` combined with a raw `TokenStream` signature is a fatal configuration error: remove `args` or change the signature.

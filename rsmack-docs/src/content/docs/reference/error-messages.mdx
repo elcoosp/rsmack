@@ -10,7 +10,7 @@ Every diagnostic from an rsmack macro is a `compile_error!` — never a panic. T
 
 ## Message format
 
-<Code lang="text" code={`error: #[<crate>::<macro>] <message>`} />
+<Code lang="text" code={"error: #[<crate>::<macro>] <message>"} />
 
 Real prefixes: `#[rsmack_edoc::edoc]`, `#[rsmack_wrap::wrap]`, `#[rsmack_seanum::seanum]`, `#[rsmack_fs::folder_iso_struct]`, `#[rsmack_megamac::megamac]`. Spans point at the offending tokens, or at the whole invocation for call-site fatals.
 

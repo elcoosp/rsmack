@@ -21,16 +21,7 @@ Partez d'un dossier de modules que votre crate déclare déjà :
 		- main.rs
 </FileTree>
 
-<Code lang="rust" title="src/main.rs" code={`mod levels;
-
-use rsmack_fs::folder_iso_struct;
-
-#[folder_iso_struct(folder = "levels", vis = "pub", derives("Debug"))]
-pub struct Levels {
-    // Les champs déclarés sont un croquis seulement : le miroir est généré depuis le dossier.
-    #[expect(dead_code)]
-    alpha: (),
-}`} />
+<Code lang="rust" title="src/main.rs" code={"mod levels;\n\nuse rsmack_fs::folder_iso_struct;\n\n#[folder_iso_struct(folder = \"levels\", vis = \"pub\", derives(\"Debug\"))]\npub struct Levels {\n    // Les champs d\u00e9clar\u00e9s sont un croquis seulement : le miroir est g\u00e9n\u00e9r\u00e9 depuis le dossier.\n    #[expect(dead_code)]\n    alpha: (),\n}"} />
 
 La macro scanne `src/levels/`, saute `mod.rs`, et génère un champ par racine de fichier. `button.rs` devient un champ `button` de type `crate::levels::button::Button` ; `beta_gamma.rs` devient `beta_gamma: crate::levels::beta_gamma::BetaGamma`. Les noms de champs sont en snake_case et les noms de types sont les conversions en PascalCase de la racine.
 
@@ -51,8 +42,7 @@ Avec `recursive = true`, chaque sous-répertoire devient un `pub mod <name>` inl
 				- settings.rs
 </FileTree>
 
-<Code lang="rust" code={`#[folder_iso_struct(folder = "ui/screens", recursive = true, derives("Debug"))]
-pub struct Screens {}`} />
+<Code lang="rust" code={"#[folder_iso_struct(folder = \"ui/screens\", recursive = true, derives(\"Debug\"))]\npub struct Screens {}"} />
 
 ## Ce qui est reporté
 

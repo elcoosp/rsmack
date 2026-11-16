@@ -12,40 +12,19 @@ Utilisez [`wrap`](/reference/wrap/) pour produire des variantes brouillon, build
 
 Définissez l'enveloppe par défaut avec `with` — un identifiant nu ou un littéral de chaîne fonctionnent tous deux :
 
-<Code lang="rust" code={`use rsmack_wrap::wrap;
-
-#[wrap(with = Option)]
-struct User {
-    name: String,      // devient Option<String>
-    tags: Vec<String>, // devient Option<Vec<String>>
-}`} />
+<Code lang="rust" code={"use rsmack_wrap::wrap;\n\n#[wrap(with = Option)]\nstruct User {\n    name: String,      // devient Option<String>\n    tags: Vec<String>, // devient Option<Vec<String>>\n}"} />
 
 ## Contrôler les champs individuels
 
 Les attributs `#[wrap(...)]` par champ surchargent le défaut. L'option `skip` laisse un champ intact, un `with` par champ échange l'enveloppe, et `map` remplace entièrement le type interne :
 
-<Code lang="rust" code={`#[wrap(with = Option)]
-struct User {
-    name: String,
-    #[wrap(skip)]
-    untouched: &'static str, // reste &'static str
-    #[wrap(with = "Box")]
-    boxed: String, // devient Box<String>
-    #[wrap(with = "Vec", map = "u8")]
-    raw: String, // devient Vec<u8>
-}`} />
+<Code lang="rust" code={"#[wrap(with = Option)]\nstruct User {\n    name: String,\n    #[wrap(skip)]\n    untouched: &'static str, // reste &'static str\n    #[wrap(with = \"Box\")]\n    boxed: String, // devient Box<String>\n    #[wrap(with = \"Vec\", map = \"u8\")]\n    raw: String, // devient Vec<u8>\n}"} />
 
 ## Tout type s'enveloppe
 
 La transformation réécrit le type de champ en `Wrapper<Inner>`, donc toute expression de type s'enveloppe : chemins, tranches, tuples, tableaux, références, pointeurs bruts, pointeurs de fonction et objets trait :
 
-<Code lang="rust" code={`#[wrap(with = Option)]
-struct Inputs {
-    borrowed: &'static str,            // Option<&'static str>
-    pointer: *const u8,                // Option<*const u8>
-    callback: fn(u8) -> bool,          // Option<fn(u8) -> bool>
-    object: Box<dyn Send>,             // Option<Box<dyn Send>>
-}`} />
+<Code lang="rust" code={"#[wrap(with = Option)]\nstruct Inputs {\n    borrowed: &'static str,            // Option<&'static str>\n    pointer: *const u8,                // Option<*const u8>\n    callback: fn(u8) -> bool,          // Option<fn(u8) -> bool>\n    object: Box<dyn Send>,             // Option<Box<dyn Send>>\n}"} />
 
 ## Garder les dérivations serde après wrap
 
@@ -53,11 +32,7 @@ struct Inputs {
 	Exécutez `wrap` avant `#[derive(Serialize, Deserialize)]`, sinon la dérive échoue. La dérive doit observer les types de champs enveloppés.
 </Aside>
 
-<Code lang="rust" code={`#[wrap(with = Option)]
-#[derive(serde::Serialize, serde::Deserialize)]
-struct User {
-    name: String,
-}`} />
+<Code lang="rust" code={"#[wrap(with = Option)]\n#[derive(serde::Serialize, serde::Deserialize)]\nstruct User {\n    name: String,\n}"} />
 
 ## Attention aux contraintes
 
