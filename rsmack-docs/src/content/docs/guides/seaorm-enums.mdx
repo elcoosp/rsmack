@@ -10,7 +10,7 @@ Use [`seanum`](/reference/seanum/) when an enum must live in a database through 
 
 ## Define a string-backed enum
 
-<Code lang="rust" code={`use rsmack_seanum::seanum;
+<Code lang="rust" title="src/lib.rs" code={`use rsmack_seanum::seanum;
 
 #[seanum(
     rs_type = "String",
@@ -32,7 +32,7 @@ The generated values are `send_email` (explicit `rename` wins over `rename_all`)
 
 With an integer `rs_type` from `i8` through `u64` (plus `isize`/`usize`), the macro adds `#[repr(...)]`, a `#[sea_orm(num_value = N)]` on every variant, and a value-based `TryFrom`:
 
-<Code lang="rust" code={`#[seanum(rs_type = "i32", db_type = "Integer")]
+<Code lang="rust" title="src/lib.rs" code={`#[seanum(rs_type = "i32", db_type = "Integer")]
 pub enum Level {
     Low = 10,
     Medium, // continues from 11
@@ -45,7 +45,7 @@ Explicit discriminants are honored and later variants continue from them. Duplic
 
 `migration = true` emits a `migration_column_def()` helper for use with [`sea-orm-migration`](https://docs.rs/sea-orm-migration):
 
-<Code lang="rust" code={`#[seanum(rs_type = "String", db_type = "Text", migration = true)]
+<Code lang="rust" title="src/lib.rs" code={`#[seanum(rs_type = "String", db_type = "Text", migration = true)]
 pub enum Status {
     Active,
     Retired,

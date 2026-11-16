@@ -85,7 +85,7 @@ Navigate to `Client` and then to the `name` field. The rendered text reads:
 
 Add `wrap` to the same struct — or to a second struct, as here — and every field type is wrapped in the generic type you name:
 
-<Code lang="rust" code={`use rsmack::wrap;
+<Code lang="rust" title="src/main.rs" code={`use rsmack::wrap;
 
 #[wrap(with = Option)]
 struct UserDraft {

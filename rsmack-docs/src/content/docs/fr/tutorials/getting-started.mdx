@@ -85,7 +85,7 @@ Naviguez vers `Client` puis vers le champ `name`. Le texte rendu lit :
 
 Ajoutez `wrap` à la même struct — ou à une seconde, comme ici — et chaque type de champ est enveloppé dans le type générique que vous nommez :
 
-<Code lang="rust" code={`use rsmack::wrap;
+<Code lang="rust" title="src/main.rs" code={`use rsmack::wrap;
 
 #[wrap(with = Option)]
 struct UserDraft {

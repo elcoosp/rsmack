@@ -12,7 +12,7 @@ Macros that panic produce ICEs — internal compiler errors — in user builds. 
 
 When expansion cannot continue, return a `syn::Error` with `?` and hand the `Result` to `ExecEnv::finish_result`:
 
-<Code lang="rust" code={`pub fn exec(args: Args, env: &ExecEnv) -> TokenStream {
+<Code lang="rust" title="src/lib.rs" code={`pub fn exec(args: Args, env: &ExecEnv) -> TokenStream {
     env.finish_result(run(args))
 }
 

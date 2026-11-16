@@ -15,7 +15,7 @@ cd my-macros`} />
 
 Mark the crate as a proc-macro crate and add both rsmack dependencies — `rsmack-megamac` for the codegen and `rsmack-utils` because the generated code routes through its entrypoint drivers:
 
-<Code lang="toml" code={`[lib]
+<Code lang="toml" title="Cargo.toml" code={`[lib]
 proc-macro = true
 
 [dependencies]
@@ -79,7 +79,7 @@ assert_eq!(GREETING, "Hello world!");`} />
 
 Change the `exec` signature to take a raw `TokenStream` — the signature *is* the configuration:
 
-<Code lang="rust" code={`// src/impls/shout.rs — declared with megamac!(kind = Func, name = shout);
+<Code lang="rust" title="src/lib.rs" code={`// src/impls/shout.rs — declared with megamac!(kind = Func, name = shout);
 use proc_macro2::TokenStream;
 use rsmack_utils::megamac::ExecEnv;
 

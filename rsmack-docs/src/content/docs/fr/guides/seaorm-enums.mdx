@@ -10,7 +10,7 @@ Utilisez [`seanum`](/reference/seanum/) quand une énumération doit vivre dans 
 
 ## Définir une énumération adossée à une chaîne
 
-<Code lang="rust" code={`use rsmack_seanum::seanum;
+<Code lang="rust" title="src/lib.rs" code={`use rsmack_seanum::seanum;
 
 #[seanum(
     rs_type = "String",
@@ -32,7 +32,7 @@ Les valeurs générées sont `send_email` (le `rename` explicite l'emporte sur `
 
 Avec un `rs_type` entier de `i8` à `u64` (plus `isize`/`usize`), la macro ajoute `#[repr(...)]`, un `#[sea_orm(num_value = N)]` sur chaque variante, et un `TryFrom` basé valeur :
 
-<Code lang="rust" code={`#[seanum(rs_type = "i32", db_type = "Integer")]
+<Code lang="rust" title="src/lib.rs" code={`#[seanum(rs_type = "i32", db_type = "Integer")]
 pub enum Level {
     Low = 10,
     Medium, // continue depuis 11
@@ -45,7 +45,7 @@ Les discriminants explicites sont honorés et les variantes suivantes continuent
 
 `migration = true` émet un helper `migration_column_def()` pour usage avec [`sea-orm-migration`](https://docs.rs/sea-orm-migration) :
 
-<Code lang="rust" code={`#[seanum(rs_type = "String", db_type = "Text", migration = true)]
+<Code lang="rust" title="src/lib.rs" code={`#[seanum(rs_type = "String", db_type = "Text", migration = true)]
 pub enum Status {
     Active,
     Retired,
