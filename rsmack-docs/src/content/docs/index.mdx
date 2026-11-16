@@ -16,6 +16,7 @@ hero:
 ---
 
 import { Aside, Card, CardGrid, LinkButton, LinkCard } from '@astrojs/starlight/components';
+import { DiataxisGrid } from '@elcoosp/docs-toolkit/components';
 
 **rsmack** is a Rust proc-macro factory. You write a `pub struct Args` with doc comments and a `pub fn exec` that does the transformation; the framework handles entrypoint generation, payload-protocol selection, documentation extraction, error plumbing, and file codegen. One `cargo add rsmack` installs every shipped macro.
 
