@@ -47,7 +47,7 @@ Depending on `rsmack` gives you every macro through one import surface; dependin
 
 The shipped macros do not hand-write their entrypoints. Each crate's `src/lib.rs` contains a declaration like:
 
-<Code lang="rust" code={`megamac!(kind = Attr, name = edoc, doc = "readme");`} />
+<Code lang="rust" title="src/lib.rs" code={`megamac!(kind = Attr, name = edoc, doc = "readme");`} />
 
 The entrypoint function, the payload parsing, and the generated documentation all come from the same machinery you use to write your own macros. When the factory improves — richer docs, faster memoization — every shipped macro inherits the improvement.
 

@@ -15,7 +15,7 @@ Dans ce tutoriel vous installez `rsmack`, documentez les champs d'une struct dep
 
 ## 1. Créer une crate
 
-<Code lang="shell" code={`cargo new rsmack-demo
+<Code lang="shell" title="Terminal" code={`cargo new rsmack-demo
 cd rsmack-demo`} />
 
 ## 2. Ajouter la dépendance
@@ -24,7 +24,7 @@ Une seule dépendance apporte chaque macro :
 
 <Tabs>
 	<TabItem label="cargo add">
-<Code lang="shell" code={`		cargo add rsmack`} />
+<Code lang="shell" title="Terminal" code={`		cargo add rsmack`} />
 	</TabItem>
 	<TabItem label="Cargo.toml">
 <Code lang="toml" code={`		[dependencies]
@@ -38,8 +38,7 @@ La façade `rsmack` ré-exporte les cinq macros derrière sa fonctionnalité `fu
 
 `edoc` lit les constantes depuis un vrai fichier dans le répertoire `src/` de votre crate. Créez `src/consts.rs` :
 
-<Code lang="rust" code={`// src/consts.rs
-pub const APP: &str = "myapp";
+<Code lang="rust" title="src/consts.rs" code={`pub const APP: &str = "myapp";
 pub const MAJOR: i32 = 1;
 pub const TAG: &str = concat!("v", MAJOR);`} />
 
@@ -51,7 +50,7 @@ pub const TAG: &str = concat!("v", MAJOR);`} />
 
 Remplacez `src/main.rs` par :
 
-<Code lang="rust" code={`use rsmack::edoc;
+<Code lang="rust" title="src/main.rs" code={`use rsmack::edoc;
 
 #[edoc(from = consts)]
 struct Client {
@@ -68,13 +67,13 @@ Chaque tuple `#[edoc((...))]` évalue ses éléments — littéraux de chaîne, 
 
 Compilez une fois pour vérifier que tout s'expanse :
 
-<Code lang="shell" code={`cargo build`} />
+<Code lang="shell" title="Terminal" code={`cargo build`} />
 
 La commande se termine sans erreur. Si une constante est mal orthographiée, le compilateur rapporte `#[rsmack_edoc::edoc] Unresolved const ident ...` et chaque autre expression cassée sur l'élément dans la même passe.
 
 ## 5. Lire les docs générées
 
-<Code lang="shell" code={`cargo doc --no-deps --open`} />
+<Code lang="shell" title="Terminal" code={`cargo doc --no-deps --open`} />
 
 Naviguez vers `Client` puis vers le champ `name`. Le texte rendu lit :
 

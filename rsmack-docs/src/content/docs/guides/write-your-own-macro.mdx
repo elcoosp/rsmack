@@ -10,7 +10,7 @@ Use [`megamac`](/reference/megamac/) to author your own proc macro. You declare 
 
 ## 1. Create a proc-macro crate
 
-<Code lang="shell" code={`cargo new my-macros --lib
+<Code lang="shell" title="Terminal" code={`cargo new my-macros --lib
 cd my-macros`} />
 
 Mark the crate as a proc-macro crate and add both rsmack dependencies — `rsmack-megamac` for the codegen and `rsmack-utils` because the generated code routes through its entrypoint drivers:
@@ -28,8 +28,7 @@ syn = "3"`} />
 
 ## 2. Declare the macro
 
-<Code lang="rust" code={`// src/lib.rs
-use rsmack_megamac::megamac;
+<Code lang="rust" title="src/lib.rs" code={`use rsmack_megamac::megamac;
 
 mod impls;
 
@@ -41,8 +40,7 @@ megamac!(kind = Func, name = greeting);`} />
 
 The convention is `src/impls/<name>.rs` with a documented `Args` struct and an `exec` function:
 
-<Code lang="rust" code={`// src/impls/greeting.rs
-use darling::FromMeta;
+<Code lang="rust" title="src/impls/greeting.rs" code={`use darling::FromMeta;
 use proc_macro2::TokenStream;
 use rsmack_utils::megamac::ExecEnv;
 

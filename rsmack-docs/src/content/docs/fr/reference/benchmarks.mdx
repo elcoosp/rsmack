@@ -8,7 +8,7 @@ import { Aside, Code, LinkCard } from '@astrojs/starlight/components';
 
 Les benchmarks d'expansion tournent avec [criterion](https://github.com/bheisler/criterion.rs) 0.8.2 (moyenne de 100 échantillons, Rust 1.99, runners de classe `ubuntu-latest`). Reproduisez avec :
 
-<Code lang="shell" code={`cargo bench --workspace`} />
+<Code lang="shell" title="Terminal" code={`cargo bench --workspace`} />
 
 ## Résultats
 
@@ -37,7 +37,7 @@ Les benchmarks d'expansion tournent avec [criterion](https://github.com/bheisler
 <Aside kind="tip" title="Itération plus rapide dans votre propre crate">
 	Les recompilations de proc-macros deviennent plus rapides quand les dépendances sont pré-optimisées. Ajoutez ceci à votre `Cargo.toml` :
 
-<Code lang="toml" code={`  [profile.dev.package."*"]
+<Code lang="toml" title="Cargo.toml" code={`  [profile.dev.package."*"]
   opt-level = 3`} />
 </Aside>
 
