@@ -1,6 +1,7 @@
 import { defineDocsConfig } from '@elcoosp/docs-toolkit/config';
 
 export default await defineDocsConfig({
+  topics: true,
   llmsTxt: {},
   site: 'https://rsmack.vercel.app',
   domain: 'rsmack.vercel.app',
