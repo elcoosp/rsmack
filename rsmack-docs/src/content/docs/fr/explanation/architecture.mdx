@@ -21,6 +21,18 @@ L'espace de travail rsmack est une pile de neuf crates Cargo : cinq macros orien
 		- rsmack-ui-tests — instantanés de diagnostic trybuild (non publiés)
 </FileTree>
 
+```mermaid
+flowchart TD
+    FAC["rsmack (Crate façade)"]
+    MAC["Proc-macros générées<br/><i>edoc · wrap · seanum · fs</i>"]
+    MEGA["rsmack-megamac<br/><i>fabrique de proc-macros</i>"]
+    UTIL["rsmack-utils<br/><i>ExecEnv · Logr · pilotes d'entrée</i>"]
+    FAC --> MAC
+    MEGA -- "génère" --> MAC
+    MAC --> UTIL
+    MEGA --> UTIL
+```
+
 ## La façade
 
 La crate `rsmack` est un shim de ré-export. Chaque macro se trouve derrière une fonctionnalité, et `full` (le défaut) les active toutes :

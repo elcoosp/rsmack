@@ -6,15 +6,10 @@ export default await defineDocsConfig({
   domain: 'rsmack.vercel.app',
   title: "rsmack",
   description: "The Rust proc-macro factory: write the exec function, get a documented macro. edoc, wrap, seanum, folder_iso_struct, and megamac.",
-  sidebar: [],
   extraStarlight: {
-                        expressiveCode: {
-                        	themes: ['github-light', 'github-dark']
-                        },
                         title: 'rsmack',
                         description:
                                 'The Rust proc-macro factory: write the exec function, get a documented macro. edoc, wrap, seanum, folder_iso_struct, and megamac.',
-                        favicon: '/favicon.png',
                         social: [
                                 {
                                         icon: 'github',
