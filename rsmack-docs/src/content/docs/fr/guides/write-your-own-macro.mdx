@@ -51,7 +51,7 @@ Changez la signature `exec` pour prendre un `TokenStream` brut — la signature 
 <Code lang="rust" code={"my_macros::shout!(hello megamac);\nassert_eq!(SHOUTED, \"HELLO MEGAMAC\");"} />
 
 <Aside kind="caution" title="Retirer args quand la charge utile est brute">
-	`args = "MyArgs"` combiné avec une signature `TokenStream` brute est une erreur de configuration fatale : retirez `args` ou changez la signature.
+    `args = "MyArgs"` combiné avec une signature `TokenStream` brute est une erreur de configuration fatale : retirez `args` ou changez la signature.
 </Aside>
 
 ## Choisir la source de documentation

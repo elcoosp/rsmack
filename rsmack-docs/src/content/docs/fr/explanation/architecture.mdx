@@ -9,16 +9,16 @@ import { Code, FileTree, LinkCard } from '@astrojs/starlight/components';
 L'espace de travail rsmack est une pile de neuf crates Cargo : cinq macros orientées utilisateur, une façade, la fabrique qui les génère, la boîte à outils que tout partage, et deux crates de développement uniquement. Comprendre cette stratification explique pourquoi un auteur de macro a besoin à la fois de `rsmack-megamac` et de `rsmack-utils`.
 
 <FileTree>
-	- packages
-		- rsmack — façade : chaque macro derrière une seule dépendance conditionnée par fonctionnalité
-		- rsmack-edoc — docs depuis des constantes (généré par megamac)
-		- rsmack-wrap — enveloppes de type de champ (généré par megamac)
-		- rsmack-seanum — énumérations actives SeaORM (généré par megamac)
-		- rsmack-fs — miroir de dossier (généré par megamac)
-		- rsmack-megamac — la fabrique de macros elle-même
-		- rsmack-utils — ExecEnv, Logr, pilotes d'entrée, aides fs
-		- rsmack-example-macros — crate exemple vivante (non publiée)
-		- rsmack-ui-tests — instantanés de diagnostic trybuild (non publiés)
+    - packages
+        - rsmack — façade : chaque macro derrière une seule dépendance conditionnée par fonctionnalité
+        - rsmack-edoc — docs depuis des constantes (généré par megamac)
+        - rsmack-wrap — enveloppes de type de champ (généré par megamac)
+        - rsmack-seanum — énumérations actives SeaORM (généré par megamac)
+        - rsmack-fs — miroir de dossier (généré par megamac)
+        - rsmack-megamac — la fabrique de macros elle-même
+        - rsmack-utils — ExecEnv, Logr, pilotes d'entrée, aides fs
+        - rsmack-example-macros — crate exemple vivante (non publiée)
+        - rsmack-ui-tests — instantanés de diagnostic trybuild (non publiés)
 </FileTree>
 
 ```mermaid

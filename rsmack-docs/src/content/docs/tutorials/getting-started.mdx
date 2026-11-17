@@ -22,12 +22,12 @@ In this tutorial you install `rsmack`, document a struct's fields from constants
 One dependency brings every macro:
 
 <Tabs>
-	<TabItem label="cargo add">
+    <TabItem label="cargo add">
 <Code lang="shell" title="Terminal" code={"\t\tcargo add rsmack"} />
-	</TabItem>
-	<TabItem label="Cargo.toml">
+    </TabItem>
+    <TabItem label="Cargo.toml">
 <Code lang="toml" code={"\t\t[dependencies]\n\t\trsmack = \"1\""} />
-	</TabItem>
+    </TabItem>
 </Tabs>
 
 The `rsmack` facade re-exports all five macros behind its `full` feature (the default). To depend on a single macro instead, add `rsmack` with one feature — for example `cargo add rsmack --no-default-features --features edoc` — or depend on the standalone crate, such as `rsmack-edoc`.
@@ -39,7 +39,7 @@ The `rsmack` facade re-exports all five macros behind its `full` feature (the de
 <Code lang="rust" title="src/consts.rs" code={"pub const APP: &str = \"myapp\";\npub const MAJOR: i32 = 1;\npub const TAG: &str = concat!(\"v\", MAJOR);"} />
 
 <Aside kind="caution" title="The constants live in a file, not an inline module">
-	`edoc` resolves `from = consts` to the path `src/consts.rs` on disk and parses that file. An inline `mod consts { ... }` in another file does not satisfy the lookup. Keep the constants in their own file.
+    `edoc` resolves `from = consts` to the path `src/consts.rs` on disk and parses that file. An inline `mod consts { ... }` in another file does not satisfy the lookup. Keep the constants in their own file.
 </Aside>
 
 ## 4. Document a struct from the constants
@@ -75,12 +75,12 @@ Add `wrap` to the same struct — or to a second struct, as here — and every f
 The fields are now `Option<String>`. Per-field control is available with `#[wrap(skip)]`, `#[wrap(with = "Box")]`, and `#[wrap(with = "Vec", map = "u8")]` — see the [`wrap` guide](/guides/wrap-field-types/) for the full behavior.
 
 <Aside kind="caution" title="Order matters with serde">
-	Execute `wrap` before `#[derive(Serialize, Deserialize)]`. The derive must observe the wrapped field types, not the original ones.
+    Execute `wrap` before `#[derive(Serialize, Deserialize)]`. The derive must observe the wrapped field types, not the original ones.
 </Aside>
 
 ## Where to go next
 
 <CardGrid>
-	<Card title="Document from constants" description="Qualified references, enum variants, item-level docs, and every supported expression." href="/guides/docs-from-constants/" />
-	<Card title="Write your own macro" description="Ship a documented proc macro from a dozen lines with megamac." href="/guides/write-your-own-macro/" />
+    <Card title="Document from constants" description="Qualified references, enum variants, item-level docs, and every supported expression." href="/guides/docs-from-constants/" />
+    <Card title="Write your own macro" description="Ship a documented proc macro from a dozen lines with megamac." href="/guides/write-your-own-macro/" />
 </CardGrid>

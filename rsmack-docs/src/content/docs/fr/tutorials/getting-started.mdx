@@ -22,12 +22,12 @@ Dans ce tutoriel vous installez `rsmack`, documentez les champs d'une struct dep
 Une seule dépendance apporte chaque macro :
 
 <Tabs>
-	<TabItem label="cargo add">
+    <TabItem label="cargo add">
 <Code lang="shell" title="Terminal" code={"\t\tcargo add rsmack"} />
-	</TabItem>
-	<TabItem label="Cargo.toml">
+    </TabItem>
+    <TabItem label="Cargo.toml">
 <Code lang="toml" code={"\t\t[dependencies]\n\t\trsmack = \"1\""} />
-	</TabItem>
+    </TabItem>
 </Tabs>
 
 La façade `rsmack` ré-exporte les cinq macros derrière sa fonctionnalité `full` (le défaut). Pour dépendre d'une seule macro à la place, ajoutez `rsmack` avec une fonctionnalité — par exemple `cargo add rsmack --no-default-features --features edoc` — ou dépendez de la crate autonome, telle que `rsmack-edoc`.
@@ -39,7 +39,7 @@ La façade `rsmack` ré-exporte les cinq macros derrière sa fonctionnalité `fu
 <Code lang="rust" title="src/consts.rs" code={"pub const APP: &str = \"myapp\";\npub const MAJOR: i32 = 1;\npub const TAG: &str = concat!(\"v\", MAJOR);"} />
 
 <Aside kind="caution" title="Les constantes vivent dans un fichier, pas dans un module inline">
-	`edoc` résout `from = consts` vers le chemin `src/consts.rs` sur disque et analyse ce fichier. Un `mod consts { ... }` inline dans un autre fichier ne satisfait pas la recherche. Gardez les constantes dans leur propre fichier.
+    `edoc` résout `from = consts` vers le chemin `src/consts.rs` sur disque et analyse ce fichier. Un `mod consts { ... }` inline dans un autre fichier ne satisfait pas la recherche. Gardez les constantes dans leur propre fichier.
 </Aside>
 
 ## 4. Documenter une struct depuis les constantes
@@ -75,12 +75,12 @@ Ajoutez `wrap` à la même struct — ou à une seconde, comme ici — et chaque
 Les champs sont maintenant `Option<String>`. Le contrôle par champ est disponible avec `#[wrap(skip)]`, `#[wrap(with = "Box")]`, et `#[wrap(with = "Vec", map = "u8")]` — voir le [guide `wrap`](/guides/wrap-field-types/) pour le comportement complet.
 
 <Aside kind="caution" title="L'ordre compte avec serde">
-	Exécutez `wrap` avant `#[derive(Serialize, Deserialize)]`. La dérive doit observer les types de champs enveloppés, pas les originaux.
+    Exécutez `wrap` avant `#[derive(Serialize, Deserialize)]`. La dérive doit observer les types de champs enveloppés, pas les originaux.
 </Aside>
 
 ## Où aller ensuite
 
 <CardGrid>
-	<Card title="Documenter depuis des constantes" description="Références qualifiées, variantes d'énumération, docs au niveau élément et chaque expression supportée." href="/guides/docs-from-constants/" />
-	<Card title="Écrire votre propre macro" description="Livrez une proc-macro documentée depuis une douzaine de lignes avec megamac." href="/guides/write-your-own-macro/" />
+    <Card title="Documenter depuis des constantes" description="Références qualifiées, variantes d'énumération, docs au niveau élément et chaque expression supportée." href="/guides/docs-from-constants/" />
+    <Card title="Écrire votre propre macro" description="Livrez une proc-macro documentée depuis une douzaine de lignes avec megamac." href="/guides/write-your-own-macro/" />
 </CardGrid>

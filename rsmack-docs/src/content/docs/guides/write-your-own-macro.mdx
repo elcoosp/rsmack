@@ -51,7 +51,7 @@ Change the `exec` signature to take a raw `TokenStream` — the signature *is* t
 <Code lang="rust" code={"my_macros::shout!(hello megamac);\nassert_eq!(SHOUTED, \"HELLO MEGAMAC\");"} />
 
 <Aside kind="caution" title="Drop args when the payload is raw">
-	`args = "MyArgs"` combined with a raw `TokenStream` signature is a fatal configuration error: remove `args` or change the signature.
+    `args = "MyArgs"` combined with a raw `TokenStream` signature is a fatal configuration error: remove `args` or change the signature.
 </Aside>
 
 ## Choose the documentation source

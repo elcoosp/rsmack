@@ -35,7 +35,7 @@ Expansion benchmarks run with [criterion](https://github.com/bheisler/criterion.
 - **Diagnostics are effectively free:** about 160 ns of driver overhead plus roughly 4 µs to collect and flush four errors.
 
 <Aside kind="tip" title="Faster iteration in your own crate">
-	Proc-macro recompiles get quicker when dependencies are pre-optimized. Drop this in your `Cargo.toml`:
+    Proc-macro recompiles get quicker when dependencies are pre-optimized. Drop this in your `Cargo.toml`:
 
 <Code lang="toml" title="Cargo.toml" code={"  [profile.dev.package.\"*\"]\n  opt-level = 3"} />
 </Aside>

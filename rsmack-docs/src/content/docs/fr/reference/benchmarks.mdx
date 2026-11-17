@@ -35,7 +35,7 @@ Les benchmarks d'expansion tournent avec [criterion](https://github.com/bheisler
 - **Les diagnostics sont effectivement gratuits :** environ 160 ns de surcoût du pilote plus environ 4 µs pour collecter et vider quatre erreurs.
 
 <Aside kind="tip" title="Itération plus rapide dans votre propre crate">
-	Les recompilations de proc-macros deviennent plus rapides quand les dépendances sont pré-optimisées. Ajoutez ceci à votre `Cargo.toml` :
+    Les recompilations de proc-macros deviennent plus rapides quand les dépendances sont pré-optimisées. Ajoutez ceci à votre `Cargo.toml` :
 
 <Code lang="toml" title="Cargo.toml" code={"  [profile.dev.package.\"*\"]\n  opt-level = 3"} />
 </Aside>

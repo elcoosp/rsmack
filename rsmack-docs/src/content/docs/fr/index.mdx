@@ -30,24 +30,24 @@ L'espace de travail livre cinq macros et la boîte à outils derrière elles :
 Tout repose sur [`rsmack-utils`](/reference/rsmack-utils/), qui fournit la paire de diagnostics `ExecEnv`/`Logr` — un remplacement basé sur `syn::Error`, sans panique, de la crate abandonnée `proc-macro-error2`.
 
 <Aside kind="tip" title="Un exemple vivant">
-	La crate [`rsmack-example-macros`](https://github.com/elcoosp/rsmack/tree/main/packages/rsmack-example-macros) dans le dépôt exerce chaque type de macro — y compris une macro DSL à charge utile brute — de bout en bout dans la suite de tests. Copiez-la comme point de départ.
+    La crate [`rsmack-example-macros`](https://github.com/elcoosp/rsmack/tree/main/packages/rsmack-example-macros) dans le dépôt exerce chaque type de macro — y compris une macro DSL à charge utile brute — de bout en bout dans la suite de tests. Copiez-la comme point de départ.
 </Aside>
 
 ## Choisissez votre chemin
 
 <CardGrid>
-	<Card title="Utiliser les macros livrées">
-		Ajoutez `rsmack`, annotez une struct, et lisez vos docs dans `cargo doc`. Commencez par le [tutoriel de démarrage](/tutorials/getting-started/).
-	</Card>
-	<Card title="Écrire votre propre macro">
-		Déclarez `megamac!(kind = Func, name = my_macro)`, écrivez `src/impls/my_macro.rs`, terminé. Suivez le [guide de macro personnalisée](/guides/write-your-own-macro/).
-	</Card>
-	<Card title="Consulter une option">
-		Chaque option d'attribut, défaut et message d'erreur est tabulé dans la section [Référence](/reference/edoc/).
-	</Card>
-	<Card title="Comprendre la conception">
-		Lisez comment le [protocole de charge utile](/explanation/payload-protocol/) piloté par la signature et la [philosophie de diagnostic](/explanation/diagnostics-philosophy/) façonnent l'espace de travail.
-	</Card>
+    <Card title="Utiliser les macros livrées">
+        Ajoutez `rsmack`, annotez une struct, et lisez vos docs dans `cargo doc`. Commencez par le [tutoriel de démarrage](/tutorials/getting-started/).
+    </Card>
+    <Card title="Écrire votre propre macro">
+        Déclarez `megamac!(kind = Func, name = my_macro)`, écrivez `src/impls/my_macro.rs`, terminé. Suivez le [guide de macro personnalisée](/guides/write-your-own-macro/).
+    </Card>
+    <Card title="Consulter une option">
+        Chaque option d'attribut, défaut et message d'erreur est tabulé dans la section [Référence](/reference/edoc/).
+    </Card>
+    <Card title="Comprendre la conception">
+        Lisez comment le [protocole de charge utile](/explanation/payload-protocol/) piloté par la signature et la [philosophie de diagnostic](/explanation/diagnostics-philosophy/) façonnent l'espace de travail.
+    </Card>
 </CardGrid>
 
 

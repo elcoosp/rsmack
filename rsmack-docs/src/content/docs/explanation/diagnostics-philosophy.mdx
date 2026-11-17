@@ -34,7 +34,7 @@ Three mechanisms keep the no-panic promise honest:
 3. **Zero-allow pedantic lints** — `clippy::pedantic` is denied workspace-wide with no allows, closing the common paths to accidental `unwrap`/`expect`.
 
 <Aside kind="note" title="Your macros inherit the toolkit">
-	Writing your own macro with `megamac` routes your diagnostics through the same `ExecEnv`/`Logr` pair — the prefix format and the two-severity model come for free. See [handle macro errors](/guides/handle-errors/).
+    Writing your own macro with `megamac` routes your diagnostics through the same `ExecEnv`/`Logr` pair — the prefix format and the two-severity model come for free. See [handle macro errors](/guides/handle-errors/).
 </Aside>
 
 ## Next steps

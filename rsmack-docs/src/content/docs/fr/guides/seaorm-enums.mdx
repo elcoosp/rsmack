@@ -31,7 +31,7 @@ Les discriminants explicites sont honorés et les variantes suivantes continuent
 Le helper mappe le `db_type` vers la méthode `ColumnDef` correspondante — `Text`, `Integer`, `BigInt`, `Boolean`, `DateTime`, et douze autres sont couverts.
 
 <Aside kind="caution" title="Les valeurs db_type à largeur de colonne n'ont pas de mapping">
-	Un `db_type` avec un paramètre de type, tel que `"String(sea_orm::sea_query::StringLen::None)"`, n'a pas de mapping `ColumnDef`. Utilisez `migration = true` avec un `db_type` nu comme `"String"`, `"Text"` ou `"Integer"`.
+    Un `db_type` avec un paramètre de type, tel que `"String(sea_orm::sea_query::StringLen::None)"`, n'a pas de mapping `ColumnDef`. Utilisez `migration = true` avec un `db_type` nu comme `"String"`, `"Text"` ou `"Integer"`.
 </Aside>
 
 ## Renommer les valeurs de façon cohérente

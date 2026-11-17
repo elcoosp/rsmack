@@ -40,7 +40,7 @@ The output is the generated entrypoint source — the proc-macro function signat
 Errors exit non-zero with `error: <message>`; a missing or unexpected argument prints the usage line.
 
 <Aside kind="note" title="rust-analyzer friendly">
-	Because the analysis is memoized by `(path, mtime, len)`, repeated playground runs — like rust-analyzer re-expansions — pay a stat, not a parse. Warm expansions measure 15–18 µs in the [benchmarks](/reference/benchmarks/).
+    Because the analysis is memoized by `(path, mtime, len)`, repeated playground runs — like rust-analyzer re-expansions — pay a stat, not a parse. Warm expansions measure 15–18 µs in the [benchmarks](/reference/benchmarks/).
 </Aside>
 
 ## Next steps

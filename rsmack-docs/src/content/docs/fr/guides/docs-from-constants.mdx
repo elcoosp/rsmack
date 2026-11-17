@@ -44,7 +44,7 @@ Les tuples de variantes fonctionnent comme les tuples de champs. Pour l'élémen
 <Code lang="rust" code={"#[edoc(from = consts)]\n#[edoc((\"The \", APP, \" client\"))]\nenum State {\n    #[edoc((\"Idle since \", TAG))]\n    Idle,\n    Busy,\n}"} />
 
 <Aside kind="note">
-	Les commentaires de doc préexistants sur les éléments annotés sont écrasés par les docs générées ; les attributs comme `#[derive(...)]` et `#[serde(...)]` sont préservés.
+    Les commentaires de doc préexistants sur les éléments annotés sont écrasés par les docs générées ; les attributs comme `#[derive(...)]` et `#[serde(...)]` sont préservés.
 </Aside>
 
 ## Garder un fichier de constantes par crate

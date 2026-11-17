@@ -13,12 +13,12 @@ Utilisez [`folder_iso_struct`](/reference/folder-iso-struct/) quand une struct d
 Partez d'un dossier de modules que votre crate déclare déjà :
 
 <FileTree>
-	- src
-		- levels
-			- mod.rs
-			- button.rs
-			- beta_gamma.rs
-		- main.rs
+    - src
+        - levels
+            - mod.rs
+            - button.rs
+            - beta_gamma.rs
+        - main.rs
 </FileTree>
 
 <Code lang="rust" title="src/main.rs" code={"mod levels;\n\nuse rsmack_fs::folder_iso_struct;\n\n#[folder_iso_struct(folder = \"levels\", vis = \"pub\", derives(\"Debug\"))]\npub struct Levels {\n    // Les champs d\u00e9clar\u00e9s sont un croquis seulement : le miroir est g\u00e9n\u00e9r\u00e9 depuis le dossier.\n    #[expect(dead_code)]\n    alpha: (),\n}"} />
@@ -26,7 +26,7 @@ Partez d'un dossier de modules que votre crate déclare déjà :
 La macro scanne `src/levels/`, saute `mod.rs`, et génère un champ par racine de fichier. `button.rs` devient un champ `button` de type `crate::levels::button::Button` ; `beta_gamma.rs` devient `beta_gamma: crate::levels::beta_gamma::BetaGamma`. Les noms de champs sont en snake_case et les noms de types sont les conversions en PascalCase de la racine.
 
 <Aside kind="note" title="Les modules doivent exister dans votre crate">
-	Les champs générés référencent `crate::levels::button::Button`, donc le dossier doit faire partie de votre arbre de modules — déclarez `mod levels;` comme d'habitude.
+    Les champs générés référencent `crate::levels::button::Button`, donc le dossier doit faire partie de votre arbre de modules — déclarez `mod levels;` comme d'habitude.
 </Aside>
 
 ## Devenir récursif pour les sous-répertoires
@@ -34,12 +34,12 @@ La macro scanne `src/levels/`, saute `mod.rs`, et génère un champ par racine d
 Avec `recursive = true`, chaque sous-répertoire devient un `pub mod <name>` inline tenant sa propre struct reflétée, nommée d'après la forme PascalCase du répertoire :
 
 <FileTree>
-	- src
-		- ui
-			- mod.rs
-			- screens
-				- login.rs
-				- settings.rs
+    - src
+        - ui
+            - mod.rs
+            - screens
+                - login.rs
+                - settings.rs
 </FileTree>
 
 <Code lang="rust" code={"#[folder_iso_struct(folder = \"ui/screens\", recursive = true, derives(\"Debug\"))]\npub struct Screens {}"} />

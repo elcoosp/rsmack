@@ -29,7 +29,7 @@ The transformation rewrites the field type to `Wrapper<Inner>`, so every type ex
 ## Keep serde derives after wrap
 
 <Aside kind="caution" title="Run wrap before serde">
-	Execute `wrap` before `#[derive(Serialize, Deserialize)]`, otherwise the derive errors. The derive must observe the wrapped field types.
+    Execute `wrap` before `#[derive(Serialize, Deserialize)]`, otherwise the derive errors. The derive must observe the wrapped field types.
 </Aside>
 
 <Code lang="rust" code={"#[wrap(with = Option)]\n#[derive(serde::Serialize, serde::Deserialize)]\nstruct User {\n    name: String,\n}"} />

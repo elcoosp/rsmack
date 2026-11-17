@@ -65,11 +65,11 @@ Helpers in `rsmack_utils::fs`, shared by the macros and available for your own b
 
 ## Exported macros
 
-### impl_json_schema!
+### impl_json_schema
 
 `impl_json_schema!(UserId, "string")` implements `schemars::JsonSchema` with a plain `{"type": "string"}` schema.
 
-### cl!
+### cl
 
 The code-link helper for doc comments: `cl!(syn::Error)` renders `` [`syn::Error`] ``, `cl!(syn::Error!)` renders `` [`syn::Error!`] ``, and `cl!(Debug)` renders `Debug`.
 

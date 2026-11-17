@@ -31,24 +31,24 @@ The workspace ships five macros and the toolkit behind them:
 Everything rests on [`rsmack-utils`](/reference/rsmack-utils/), which provides the `ExecEnv`/`Logr` diagnostics pair — a `syn::Error`-based, panic-free replacement for the abandoned `proc-macro-error2` crate.
 
 <Aside kind="tip" title="A living example">
-	The [`rsmack-example-macros`](https://github.com/elcoosp/rsmack/tree/main/packages/rsmack-example-macros) crate in the repository exercises every macro kind — including a raw-payload DSL macro — end to end in the test suite. Copy it as a starting point.
+    The [`rsmack-example-macros`](https://github.com/elcoosp/rsmack/tree/main/packages/rsmack-example-macros) crate in the repository exercises every macro kind — including a raw-payload DSL macro — end to end in the test suite. Copy it as a starting point.
 </Aside>
 
 ## Choose your path
 
 <CardGrid>
-	<Card title="Use the shipped macros">
-		Add `rsmack`, annotate a struct, and read your docs in `cargo doc`. Start with the [getting-started tutorial](/tutorials/getting-started/).
-	</Card>
-	<Card title="Write your own macro">
-		Declare `megamac!(kind = Func, name = my_macro)`, write `src/impls/my_macro.rs`, done. Follow the [custom macro guide](/guides/write-your-own-macro/).
-	</Card>
-	<Card title="Look up an option">
-		Every attribute option, default, and error message is tabulated in the [Reference](/reference/edoc/) section.
-	</Card>
-	<Card title="Understand the design">
-		Read how the signature-driven [payload protocol](/explanation/payload-protocol/) and the [diagnostics philosophy](/explanation/diagnostics-philosophy/) shape the workspace.
-	</Card>
+    <Card title="Use the shipped macros">
+        Add `rsmack`, annotate a struct, and read your docs in `cargo doc`. Start with the [getting-started tutorial](/tutorials/getting-started/).
+    </Card>
+    <Card title="Write your own macro">
+        Declare `megamac!(kind = Func, name = my_macro)`, write `src/impls/my_macro.rs`, done. Follow the [custom macro guide](/guides/write-your-own-macro/).
+    </Card>
+    <Card title="Look up an option">
+        Every attribute option, default, and error message is tabulated in the [Reference](/reference/edoc/) section.
+    </Card>
+    <Card title="Understand the design">
+        Read how the signature-driven [payload protocol](/explanation/payload-protocol/) and the [diagnostics philosophy](/explanation/diagnostics-philosophy/) shape the workspace.
+    </Card>
 </CardGrid>
 
 

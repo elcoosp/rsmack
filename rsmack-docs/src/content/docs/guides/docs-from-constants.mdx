@@ -44,7 +44,7 @@ Variant tuples work like field tuples. For the item itself, add a separate `#[ed
 <Code lang="rust" code={"#[edoc(from = consts)]\n#[edoc((\"The \", APP, \" client\"))]\nenum State {\n    #[edoc((\"Idle since \", TAG))]\n    Idle,\n    Busy,\n}"} />
 
 <Aside kind="note">
-	Pre-existing doc comments on annotated items are overwritten by the generated docs; attributes such as `#[derive(...)]` and `#[serde(...)]` are preserved.
+    Pre-existing doc comments on annotated items are overwritten by the generated docs; attributes such as `#[derive(...)]` and `#[serde(...)]` are preserved.
 </Aside>
 
 ## Keep one constants file per crate

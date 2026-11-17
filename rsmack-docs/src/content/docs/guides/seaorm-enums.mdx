@@ -31,7 +31,7 @@ Explicit discriminants are honored and later variants continue from them. Duplic
 The helper maps the `db_type` to the matching `ColumnDef` method — `Text`, `Integer`, `BigInt`, `Boolean`, `DateTime`, and twelve more are covered.
 
 <Aside kind="caution" title="Column-width db_type values have no mapping">
-	A `db_type` with a type parameter, such as `"String(sea_orm::sea_query::StringLen::None)"`, has no `ColumnDef` mapping. Use `migration = true` with a bare `db_type` like `"String"`, `"Text"`, or `"Integer"`.
+    A `db_type` with a type parameter, such as `"String(sea_orm::sea_query::StringLen::None)"`, has no `ColumnDef` mapping. Use `migration = true` with a bare `db_type` like `"String"`, `"Text"`, or `"Integer"`.
 </Aside>
 
 ## Rename values consistently

@@ -29,7 +29,7 @@ La transformation réécrit le type de champ en `Wrapper<Inner>`, donc toute exp
 ## Garder les dérivations serde après wrap
 
 <Aside kind="caution" title="Exécuter wrap avant serde">
-	Exécutez `wrap` avant `#[derive(Serialize, Deserialize)]`, sinon la dérive échoue. La dérive doit observer les types de champs enveloppés.
+    Exécutez `wrap` avant `#[derive(Serialize, Deserialize)]`, sinon la dérive échoue. La dérive doit observer les types de champs enveloppés.
 </Aside>
 
 <Code lang="rust" code={"#[wrap(with = Option)]\n#[derive(serde::Serialize, serde::Deserialize)]\nstruct User {\n    name: String,\n}"} />
