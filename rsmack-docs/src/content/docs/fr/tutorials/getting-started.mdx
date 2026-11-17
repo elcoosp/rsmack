@@ -4,7 +4,7 @@ description: "Installez rsmack, documentez une struct depuis des constantes avec
 type: tutorial
 ---
 
-import { Aside, Card, CardGrid, Code, LinkCard, Steps, TabItem, Tabs } from '@astrojs/starlight/components';
+import { Aside, CardGrid, Code, LinkCard, Steps, TabItem, Tabs } from '@astrojs/starlight/components';
 
 Dans ce tutoriel vous installez `rsmack`, documentez les champs d'une struct depuis des constantes avec [`edoc`](/reference/edoc/), et enveloppez ces champs dans `Option` avec [`wrap`](/reference/wrap/). Vous terminez en lisant la documentation générée dans `cargo doc`.
 
@@ -81,6 +81,6 @@ Les champs sont maintenant `Option<String>`. Le contrôle par champ est disponib
 ## Où aller ensuite
 
 <CardGrid>
-    <Card title="Documenter depuis des constantes" description="Références qualifiées, variantes d'énumération, docs au niveau élément et chaque expression supportée." href="/guides/docs-from-constants/" />
-    <Card title="Écrire votre propre macro" description="Livrez une proc-macro documentée depuis une douzaine de lignes avec megamac." href="/guides/write-your-own-macro/" />
+    <LinkCard title="Documenter depuis des constantes" description="Références qualifiées, variantes d'énumération, docs au niveau élément et chaque expression supportée." href="/fr/guides/docs-from-constants/" />
+    <LinkCard title="Écrire votre propre macro" description="Livrez une proc-macro documentée depuis une douzaine de lignes avec megamac." href="/fr/guides/write-your-own-macro/" />
 </CardGrid>

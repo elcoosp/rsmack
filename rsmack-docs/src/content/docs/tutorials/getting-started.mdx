@@ -4,7 +4,7 @@ description: Install rsmack, document a struct from constants with edoc, and wra
 type: tutorial
 ---
 
-import { Aside, Card, CardGrid, Code, LinkCard, Steps, TabItem, Tabs } from '@astrojs/starlight/components';
+import { Aside, CardGrid, Code, LinkCard, Steps, TabItem, Tabs } from '@astrojs/starlight/components';
 
 In this tutorial you install `rsmack`, document a struct's fields from constants with [`edoc`](/reference/edoc/), and wrap those fields in `Option` with [`wrap`](/reference/wrap/). You finish by reading the generated documentation in `cargo doc`.
 
@@ -81,6 +81,6 @@ The fields are now `Option<String>`. Per-field control is available with `#[wrap
 ## Where to go next
 
 <CardGrid>
-    <Card title="Document from constants" description="Qualified references, enum variants, item-level docs, and every supported expression." href="/guides/docs-from-constants/" />
-    <Card title="Write your own macro" description="Ship a documented proc macro from a dozen lines with megamac." href="/guides/write-your-own-macro/" />
+    <LinkCard title="Document from constants" description="Qualified references, enum variants, item-level docs, and every supported expression." href="/guides/docs-from-constants/" />
+    <LinkCard title="Write your own macro" description="Ship a documented proc macro from a dozen lines with megamac." href="/guides/write-your-own-macro/" />
 </CardGrid>
