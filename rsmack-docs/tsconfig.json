@@ -1,3 +1,9 @@
 {
-  "extends": "@elcoosp/docs-toolkit/tsconfig.base.json"
+  "extends": "@elcoosp/docs-toolkit/tsconfig.base.json",
+  "mdx": {
+    "checkMdx": true
+  },
+  "compilerOptions": {
+    "skipLibCheck": true
+  }
 }
