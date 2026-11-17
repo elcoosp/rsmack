@@ -1,0 +1,25 @@
+# Curated domain glossary for @elcoosp/docs-toolkit (starlight-term-glossary)
+- term: "payload protocol"
+  locale: en
+  href: "/explanation/payload-protocol/"
+  definition: "Convention inferring macro argument parsing (darling attributes vs raw token payloads) directly from the exec function signature."
+- term: "megamac"
+  locale: en
+  href: "/reference/megamac/"
+  definition: "Proc-macro factory generating entrypoints, error plumbing, and doc extraction from a typed Args struct and exec function."
+- term: "const evaluation"
+  locale: en
+  href: "/explanation/performance/"
+  definition: "Compile-time evaluator resolving typed constant expressions (i128, f64, bool, strings) so edoc can embed values in doc comments."
+- term: "snapshot tests"
+  locale: en
+  href: "/explanation/diagnostics-philosophy/"
+  definition: "Compile-fail and expansion tests pinning exact diagnostic formatting and generated Rust output across changes."
+- term: "protocole de charge utile"
+  locale: fr
+  href: "/fr/explanation/payload-protocol/"
+  definition: "Convention déduisant le parsing des arguments de macro directement depuis la signature de la fonction exec."
+- term: "tests d’instantané"
+  locale: fr
+  href: "/fr/explanation/diagnostics-philosophy/"
+  definition: "Tests figeant le rendu exact des diagnostics de compilation et du code généré par les macros."
