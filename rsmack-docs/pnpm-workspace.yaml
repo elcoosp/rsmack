@@ -5,3 +5,5 @@ peerDependencyRules:
     '@ascorbic/loader-utils>astro': '*'
 minimumReleaseAgeExclude:
   - "@elcoosp/*"
+overrides:
+  '@elcoosp/docs-toolkit': link:../../docs-toolkit
