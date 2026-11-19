@@ -11,7 +11,7 @@ hero:
     alt: "rsmack — la fabrique de proc-macros Rust"
   actions:
     - text: Commencer le tutoriel
-      link: /tutorials/getting-started/
+      link: /fr/tutorials/getting-started/
       icon: right-arrow
 ---
 
@@ -21,13 +21,13 @@ import { Aside, Card, CardGrid, LinkButton, LinkCard } from '@astrojs/starlight/
 
 L'espace de travail livre cinq macros et la boîte à outils derrière elles :
 
-- [`edoc`](/reference/edoc/) — documentation depuis des constantes, avec évaluation typée d'expressions const
-- [`wrap`](/reference/wrap/) — enveloppes de type de champ qui acceptent tout type
-- [`seanum`](/reference/seanum/) — énumérations actives `SeaORM` avec discriminants et migrations
-- [`folder_iso_struct`](/reference/folder-iso-struct/) — miroir de dossier inline à la compilation
-- [`megamac`](/reference/megamac/) — la fabrique pilotée par la signature qui génère tout ce qui précède et vos propres macros
+- [`edoc`](/fr/reference/edoc/) — documentation depuis des constantes, avec évaluation typée d'expressions const
+- [`wrap`](/fr/reference/wrap/) — enveloppes de type de champ qui acceptent tout type
+- [`seanum`](/fr/reference/seanum/) — énumérations actives `SeaORM` avec discriminants et migrations
+- [`folder_iso_struct`](/fr/reference/folder-iso-struct/) — miroir de dossier inline à la compilation
+- [`megamac`](/fr/reference/megamac/) — la fabrique pilotée par la signature qui génère tout ce qui précède et vos propres macros
 
-Tout repose sur [`rsmack-utils`](/reference/rsmack-utils/), qui fournit la paire de diagnostics `ExecEnv`/`Logr` — un remplacement basé sur `syn::Error`, sans panique, de la crate abandonnée `proc-macro-error2`.
+Tout repose sur [`rsmack-utils`](/fr/reference/rsmack-utils/), qui fournit la paire de diagnostics `ExecEnv`/`Logr` — un remplacement basé sur `syn::Error`, sans panique, de la crate abandonnée `proc-macro-error2`.
 
 <Aside kind="tip" title="Un exemple vivant">
     La crate [`rsmack-example-macros`](https://github.com/elcoosp/rsmack/tree/main/packages/rsmack-example-macros) dans le dépôt exerce chaque type de macro — y compris une macro DSL à charge utile brute — de bout en bout dans la suite de tests. Copiez-la comme point de départ.
@@ -37,16 +37,16 @@ Tout repose sur [`rsmack-utils`](/reference/rsmack-utils/), qui fournit la paire
 
 <CardGrid>
     <Card title="Utiliser les macros livrées">
-        Ajoutez `rsmack`, annotez une struct, et lisez vos docs dans `cargo doc`. Commencez par le [tutoriel de démarrage](/tutorials/getting-started/).
+        Ajoutez `rsmack`, annotez une struct, et lisez vos docs dans `cargo doc`. Commencez par le [tutoriel de démarrage](/fr/tutorials/getting-started/).
     </Card>
     <Card title="Écrire votre propre macro">
-        Déclarez `megamac!(kind = Func, name = my_macro)`, écrivez `src/impls/my_macro.rs`, terminé. Suivez le [guide de macro personnalisée](/guides/write-your-own-macro/).
+        Déclarez `megamac!(kind = Func, name = my_macro)`, écrivez `src/impls/my_macro.rs`, terminé. Suivez le [guide de macro personnalisée](/fr/guides/write-your-own-macro/).
     </Card>
     <Card title="Consulter une option">
-        Chaque option d'attribut, défaut et message d'erreur est tabulé dans la section [Référence](/reference/edoc/).
+        Chaque option d'attribut, défaut et message d'erreur est tabulé dans la section [Référence](/fr/reference/edoc/).
     </Card>
     <Card title="Comprendre la conception">
-        Lisez comment le [protocole de charge utile](/explanation/payload-protocol/) piloté par la signature et la [philosophie de diagnostic](/explanation/diagnostics-philosophy/) façonnent l'espace de travail.
+        Lisez comment le [protocole de charge utile](/fr/explanation/payload-protocol/) piloté par la signature et la [philosophie de diagnostic](/fr/explanation/diagnostics-philosophy/) façonnent l'espace de travail.
     </Card>
 </CardGrid>
 
@@ -58,4 +58,4 @@ Tout repose sur [`rsmack-utils`](/reference/rsmack-utils/), qui fournit la paire
 
 ## Étapes suivantes
 
-<LinkCard title="Premiers pas" description="Installez rsmack et générez votre première macro documentée en dix minutes." href="/tutorials/getting-started/" />
+<LinkCard title="Premiers pas" description="Installez rsmack et générez votre première macro documentée en dix minutes." href="/fr/tutorials/getting-started/" />
