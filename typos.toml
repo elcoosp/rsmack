@@ -1,0 +1,17 @@
+# typos configuration for the English-only check.
+#
+# The documentation is bilingual: English lives at the content root while the
+# French translation lives under `docs/fr/**` and `i18n/fr.json`. The French
+# prose is intentional and must not be "corrected" as English, so those paths
+# are excluded from the check. Mixed-locale files (e.g. `glossary.yml`) are
+# still scanned, with their intentional French terms whitelisted below.
+
+[files]
+extend-exclude = [
+  "rsmack-docs/src/content/docs/fr/**",
+  "rsmack-docs/src/content/i18n/fr.json",
+]
+
+[default.extend-words]
+# French terms that legitimately appear in mixed-locale files.
+fonction = "fonction"
